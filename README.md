@@ -1,16 +1,12 @@
-# koru
+# Koru - A Personal Self-Improvement App
 
-A Self-growth App
+This is a personal Flutter application I am building to improve in areas like fitness, daily habits, and life skills. The app is named 'Koru', symbolizing new life and growth.
 
-## Getting Started
+## Current Progress (as of Sept 14, 2025)
+- [x] Project setup with Flutter and a Firebase backend.
+- [x] Implemented a multi-screen flow: Splash Screen -> "Big 3" Entry -> Main Dashboard.
+- [x] The "Big 3" feature is fully functional. It can save daily priorities to Firestore and display them in real-time on the dashboard.
+- [x] Established a dark theme and a clean UI structure.
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Next Steps
+- Build out the main dashboard with widgets for all six core modules (The Engine, The Fuel, etc.).
