@@ -19,14 +19,10 @@ class DietScreen extends StatelessWidget {
         backgroundColor: Colors.black,
         elevation: 0,
       ),
-      // --- THE FIX: Use a ListView instead of a Column ---
-      // This makes the screen scrollable and prevents overflows.
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          // Add some vertical spacing between cards
           const SizedBox(height: 20),
-
           // --- "My Meals" Card ---
           GradientCard(
             child: Padding(
@@ -43,27 +39,16 @@ class DietScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       ElevatedButton.icon(
-                        onPressed: () {
-                          showMealDialog(context: context);
-                        },
+                        onPressed: () => showMealDialog(context: context),
                         icon: const Icon(Icons.add),
                         label: const Text('Add'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[800],
-                        ),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[800]),
                       ),
                       ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const MealsLibraryScreen()),
-                          );
-                        },
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MealsLibraryScreen())),
                         icon: const Icon(Icons.menu_book),
                         label: const Text('Library'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[800],
-                        ),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[800]),
                       ),
                     ],
                   ),
@@ -71,9 +56,7 @@ class DietScreen extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(height: 20),
-
           // --- "Water Intake" Card ---
           GradientCard(
             child: Padding(
@@ -89,28 +72,18 @@ class DietScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
+                      // --- UPDATED NAVIGATION ---
                       ElevatedButton.icon(
-                        onPressed: () {
-                          print('Add Water tapped!');
-                        },
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const WaterIntakeScreen())),
                         icon: const Icon(Icons.add),
                         label: const Text('Add'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[800],
-                        ),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[800]),
                       ),
                       ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const WaterIntakeScreen()),
-                          );
-                        },
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const WaterIntakeScreen())),
                         icon: const Icon(Icons.history),
                         label: const Text('Water Log'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[800],
-                        ),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[800]),
                       ),
                     ],
                   ),
@@ -118,9 +91,7 @@ class DietScreen extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(height: 20),
-
           // --- "Daily Calories" Card ---
           GradientCard(
             child: Padding(
@@ -137,27 +108,16 @@ class DietScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       ElevatedButton.icon(
-                        onPressed: () {
-                          print('Add Calories tapped!');
-                        },
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CalorieTrackerScreen())),
                         icon: const Icon(Icons.add),
                         label: const Text('Add'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[800],
-                        ),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[800]),
                       ),
                       ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const CalorieTrackerScreen()),
-                          );
-                        },
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CalorieTrackerScreen())),
                         icon: const Icon(Icons.bar_chart),
                         label: const Text('Total Calorie'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[800],
-                        ),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[800]),
                       ),
                     ],
                   ),
