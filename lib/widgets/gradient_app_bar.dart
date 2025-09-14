@@ -1,5 +1,3 @@
-// lib/widgets/gradient_app_bar.dart
-
 import 'package:flutter/material.dart';
 
 class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -12,9 +10,8 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
         padding: const EdgeInsets.all(2.0),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          // --- UPDATED LIGHT RED GRADIENT ---
           gradient: const LinearGradient(
-            colors: [Color(0xFFEF5350), Color(0xFF5C6BC0)], // Light Red to Indigo
+            colors: [Color(0xFFEF5350), Color(0xFF5C6BC0)],
             begin: Alignment(-1.0, -4.0),
             end: Alignment(1.0, 4.0),
           ),

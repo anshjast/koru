@@ -1,9 +1,7 @@
-// lib/screens/water_intake_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:koru/screens/water_history_screen.dart'; // <-- Import the new screen
+import 'package:koru/screens/water_history_screen.dart';
 import 'package:liquid_progress_indicator_v2/liquid_progress_indicator.dart';
 
 class WaterIntakeScreen extends StatefulWidget {
@@ -37,7 +35,6 @@ class _WaterIntakeScreenState extends State<WaterIntakeScreen> {
         title: const Text('Water Intake'),
         backgroundColor: Colors.black,
         elevation: 0,
-        // --- ADDED HISTORY BUTTON ---
         actions: [
           IconButton(
             icon: const Icon(Icons.history),

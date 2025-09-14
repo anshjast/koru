@@ -1,5 +1,3 @@
-// lib/screens/meals_library_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:koru/widgets/gradient_card.dart';
@@ -20,7 +18,6 @@ class _MealsLibraryScreenState extends State<MealsLibraryScreen> {
   @override
   void initState() {
     super.initState();
-    // Listen for changes in the search bar
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
@@ -45,7 +42,6 @@ class _MealsLibraryScreenState extends State<MealsLibraryScreen> {
       ),
       body: Column(
         children: [
-          // --- SEARCH BAR ---
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: TextField(
@@ -61,7 +57,6 @@ class _MealsLibraryScreenState extends State<MealsLibraryScreen> {
               ),
             ),
           ),
-          // --- MEALS LIST ---
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: _mealsCollection.orderBy('name').snapshots(),
@@ -78,16 +73,12 @@ class _MealsLibraryScreenState extends State<MealsLibraryScreen> {
                     ),
                   );
                 }
-
-                // --- SEARCH FILTERING LOGIC ---
                 final filteredDocs = snapshot.data!.docs.where((doc) {
                   final mealData = doc.data() as Map<String, dynamic>;
                   final name = (mealData['name'] as String? ?? '').toLowerCase();
                   final tags = List<String>.from(mealData['tags'] ?? [])
                       .map((tag) => tag.toLowerCase())
                       .toList();
-
-                  // Return true if the name or any tag contains the search query
                   return name.contains(_searchQuery) ||
                       tags.any((tag) => tag.contains(_searchQuery));
                 }).toList();

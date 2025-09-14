@@ -1,8 +1,6 @@
-// lib/screens/dashboard_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:koru/screens/train_screen.dart'; // <-- MAKE SURE THIS LINE IS HERE
+import 'package:koru/screens/train_screen.dart';
 import 'package:koru/widgets/gradient_app_bar.dart';
 import 'package:koru/widgets/gradient_card.dart';
 import 'package:koru/screens/goals_screen.dart';

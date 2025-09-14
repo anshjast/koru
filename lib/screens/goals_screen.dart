@@ -1,5 +1,3 @@
-// lib/screens/goals_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:koru/widgets/gradient_card.dart';
@@ -13,7 +11,6 @@ class GoalsScreen extends StatefulWidget {
 }
 
 class _GoalsScreenState extends State<GoalsScreen> {
-  // Firestore collections for each goal type
   final _ootyCollection = FirebaseFirestore.instance.collection('ooty');
   final _monthlyObjectives = FirebaseFirestore.instance.collection('monthlyObjectives');
   final _weeklyObjectives = FirebaseFirestore.instance.collection('weeklyObjectives');
@@ -50,14 +47,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
       ),
     );
   }
-
-  // Widget to build the OOTY section
   Widget _buildOotySection() {
     return StreamBuilder<DocumentSnapshot>(
       stream: _ootyCollection.doc('main').snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData || !snapshot.data!.exists) {
-          // Display a prompt if the OOTY hasn't been set yet
           return GradientCard(
             child: ListTile(
               title: const Text('OOTY', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -70,10 +64,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
         var data = snapshot.data!.data() as Map<String, dynamic>;
         String ootyText = data['text'] ?? "No text found.";
         bool isDone = data['isDone'] ?? false;
-
-        // If the OOTY is marked as done, don't show it
         if (isDone) {
-          return const SizedBox.shrink(); // Return an empty widget
+          return const SizedBox.shrink();
         }
 
         return GradientCard(
@@ -90,8 +82,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
       },
     );
   }
-
-  // A reusable widget to build the monthly and weekly objective lists
   Widget _buildObjectiveSection({required String title, required CollectionReference collection}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,7 +89,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
         Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
         StreamBuilder<QuerySnapshot>(
-          // Query filters out any objectives already marked as 'done'
           stream: collection.where('isDone', isEqualTo: false).orderBy('timestamp').snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -137,8 +126,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
       ],
     );
   }
-
-  // Dialog to choose between adding a weekly or monthly objective
   void _showAddObjectiveChoiceDialog() {
     showDialog(
       context: context,
@@ -164,8 +151,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
       ),
     );
   }
-
-  // A reusable dialog for adding or editing any goal
   void _showGoalDialog({required CollectionReference collection, bool isOoty = false, String? docId, String? currentText}) {
     final textController = TextEditingController(text: currentText);
     String title = isOoty ? "Set Your OOTY" : (docId == null ? "Add Objective" : "Edit Objective");

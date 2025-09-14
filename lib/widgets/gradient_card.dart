@@ -1,11 +1,9 @@
-// lib/widgets/gradient_card.dart
-
 import 'package:flutter/material.dart';
 
 class GradientCard extends StatelessWidget {
   final Widget child;
   final VoidCallback? onTap;
-  final List<Color>? gradientColors; // <-- New optional property
+  final List<Color>? gradientColors;
 
   const GradientCard({
     super.key,
@@ -16,7 +14,6 @@ class GradientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use the provided colors, or fall back to the default red/indigo gradient
     final colors = gradientColors ??
         [const Color(0xFFEF5350), const Color(0xFF5C6BC0)];
 

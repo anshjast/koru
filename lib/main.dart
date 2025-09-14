@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:koru/screens/splash_screen.dart'; // Ensure this import is here
+import 'package:koru/screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +20,7 @@ class KoruApp extends StatelessWidget {
         brightness: Brightness.dark,
         primarySwatch: Colors.teal,
       ),
-      home: const SplashScreen(), // This calls the class from the other file
+      home: const SplashScreen(),
     );
   }
 }

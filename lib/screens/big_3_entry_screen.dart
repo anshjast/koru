@@ -1,10 +1,7 @@
-// lib/screens/big_3_entry_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:koru/screens/dashboard_screen.dart';
 
-// Ensure the class name here is spelled exactly like this
 class Big3EntryScreen extends StatefulWidget {
   const Big3EntryScreen({super.key});
 

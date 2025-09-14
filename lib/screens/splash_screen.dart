@@ -1,6 +1,6 @@
-import 'dart:async'; // FIX #1: Was 'dart.async', now 'dart:async'
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:koru/screens/big_3_entry_screen.dart'; // FIX #2: Added this missing import
+import 'package:koru/screens/big_3_entry_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

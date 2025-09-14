@@ -1,10 +1,8 @@
-// lib/screens/diet_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:koru/screens/calorie_tracker_screen.dart';
 import 'package:koru/screens/meals_library_screen.dart';
 import 'package:koru/screens/water_intake_screen.dart';
-import 'package:koru/screens/water_history_screen.dart'; // <-- THIS IS THE FIX
+import 'package:koru/screens/water_history_screen.dart';
 import 'package:koru/widgets/calorie_dialog.dart';
 import 'package:koru/widgets/gradient_card.dart';
 import 'package:koru/widgets/meal_dialog.dart';
@@ -26,7 +24,6 @@ class DietScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            // --- "My Meals" Card ---
             GradientCard(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
@@ -70,8 +67,6 @@ class DietScreen extends StatelessWidget {
                 ),
               ),
             ),
-
-            // --- "Water Intake" Card ---
             GradientCard(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
@@ -118,8 +113,6 @@ class DietScreen extends StatelessWidget {
                 ),
               ),
             ),
-
-            // --- "Daily Calories" Card ---
             GradientCard(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),

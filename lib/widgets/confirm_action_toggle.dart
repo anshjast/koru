@@ -1,5 +1,3 @@
-// lib/widgets/confirm_action_toggle.dart
-
 import 'package:flutter/material.dart';
 
 enum ConfirmAction { done, delete }
@@ -19,18 +17,16 @@ class ConfirmActionToggle extends StatefulWidget {
 }
 
 class _ConfirmActionToggleState extends State<ConfirmActionToggle> {
-  ConfirmAction? _confirming; // null = none, or the action being confirmed
+  ConfirmAction? _confirming;
 
   void _handleTap(ConfirmAction action) {
     if (_confirming == action) {
-      // This is the second tap, so execute the action
       if (action == ConfirmAction.done) {
         widget.onDoneConfirmed();
       } else {
         widget.onDeleteConfirmed();
       }
     } else {
-      // This is the first tap, so just set the confirmation state
       setState(() {
         _confirming = action;
       });
@@ -49,7 +45,6 @@ class _ConfirmActionToggleState extends State<ConfirmActionToggle> {
       ),
       child: Row(
         children: [
-          // Done button
           Expanded(
             child: GestureDetector(
               onTap: () => _handleTap(ConfirmAction.done),

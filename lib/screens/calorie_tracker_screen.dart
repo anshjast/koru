@@ -1,8 +1,6 @@
-// lib/screens/calorie_tracker_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:koru/widgets/calorie_dialog.dart'; // <-- Import the new reusable dialog
+import 'package:koru/widgets/calorie_dialog.dart';
 
 class CalorieTrackerScreen extends StatefulWidget {
   const CalorieTrackerScreen({super.key});

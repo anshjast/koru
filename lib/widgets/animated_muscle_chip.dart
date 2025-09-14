@@ -1,5 +1,3 @@
-// lib/widgets/animated_muscle_chip.dart
-
 import 'package:flutter/material.dart';
 
 class AnimatedMuscleChip extends StatefulWidget {
@@ -23,8 +21,7 @@ class _AnimatedMuscleChipState extends State<AnimatedMuscleChip> {
 
   @override
   Widget build(BuildContext context) {
-    // We use the app's theme color for the selected state
-    final selectedColor = const Color(0xFFEF5350); // Light Red from our theme
+    final selectedColor = const Color(0xFFEF5350);
     final unselectedColor = Colors.grey[800];
 
     return GestureDetector(
@@ -39,7 +36,6 @@ class _AnimatedMuscleChipState extends State<AnimatedMuscleChip> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           color: widget.isSelected ? selectedColor : unselectedColor,
-          // Create a subtle shadow effect
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.3),

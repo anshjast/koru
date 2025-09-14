@@ -1,9 +1,6 @@
-// lib/widgets/meal_dialog.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// --- UPDATED COLOR PALETTE FOR TAGS ---
 const Map<String, Color> tagColors = {
   'Breakfast': Colors.yellow,
   'Lunch': Colors.red,

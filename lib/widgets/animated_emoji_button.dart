@@ -1,6 +1,4 @@
-// lib/widgets/animated_emoji_button.dart
-
-import 'package:flutter/material.dart'; // <-- THIS IS THE FIX
+import 'package:flutter/material.dart';
 
 class AnimatedEmojiButton extends StatelessWidget {
   final String emoji;

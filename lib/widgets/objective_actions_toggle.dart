@@ -1,5 +1,3 @@
-// lib/widgets/objective_actions_toggle.dart
-
 import 'package:flutter/material.dart';
 
 class ObjectiveActionsToggle extends StatelessWidget {
@@ -25,14 +23,13 @@ class ObjectiveActionsToggle extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Done button
           Expanded(
             child: GestureDetector(
               onTap: onDone,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: isDone ? const Color(0xFF5C6BC0) : Colors.transparent, // Indigo when done
+                  color: isDone ? const Color(0xFF5C6BC0) : Colors.transparent,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(7),
                     bottomLeft: Radius.circular(7),

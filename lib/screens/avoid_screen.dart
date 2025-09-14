@@ -1,5 +1,3 @@
-// lib/screens/avoid_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:koru/widgets/gradient_card.dart';
@@ -48,7 +46,6 @@ class _AvoidScreenState extends State<AvoidScreen> {
             itemBuilder: (context, index) {
               var habit = habits[index];
               String habitText = habit['text'];
-              // Firestore saves timestamps, we need to convert them to DateTime objects
               List<DateTime> successDays = (habit['successDays'] as List<dynamic>)
                   .map((ts) => (ts as Timestamp).toDate())
                   .toList();
@@ -83,11 +80,10 @@ class _AvoidScreenState extends State<AvoidScreen> {
     );
   }
 
-  // A widget to build the "Don't Break the Chain" calendar
   Widget _buildCalendar(String docId, List<DateTime> successDays) {
     return TableCalendar(
       firstDay: DateTime.utc(2020, 1, 1),
-      lastDay: DateTime.now().add(const Duration(days: 365)), // Allow future logging
+      lastDay: DateTime.now().add(const Duration(days: 365)),
       focusedDay: DateTime.now(),
       calendarFormat: CalendarFormat.month,
       headerStyle: const HeaderStyle(
@@ -105,23 +101,18 @@ class _AvoidScreenState extends State<AvoidScreen> {
           shape: BoxShape.circle,
         ),
       ),
-      // This tells the calendar which days should be marked as "selected" (successful)
       selectedDayPredicate: (day) {
         return successDays.any((successDay) => isSameDay(successDay, day));
       },
-      // This logic handles tapping on a day
       onDaySelected: (selectedDay, focusedDay) {
         setState(() {
-          // Check if the day is already marked as a success
           final isAlreadySuccessful = successDays.any((d) => isSameDay(d, selectedDay));
 
           if (isAlreadySuccessful) {
-            // If it is, remove it (in case of a mistake)
             _avoidCollection.doc(docId).update({
               'successDays': FieldValue.arrayRemove([Timestamp.fromDate(selectedDay)])
             });
           } else {
-            // If it's not, add it to the list of successful days
             _avoidCollection.doc(docId).update({
               'successDays': FieldValue.arrayUnion([Timestamp.fromDate(selectedDay)])
             });
@@ -130,8 +121,6 @@ class _AvoidScreenState extends State<AvoidScreen> {
       },
     );
   }
-
-  // Dialog to add a new habit to avoid
   void _showAddHabitDialog() {
     final textController = TextEditingController();
     showDialog(
@@ -152,7 +141,6 @@ class _AvoidScreenState extends State<AvoidScreen> {
             onPressed: () {
               final String text = textController.text.trim();
               if (text.isNotEmpty) {
-                // Create a new habit document with an empty list of success days
                 _avoidCollection.add({
                   'text': text,
                   'successDays': [],

@@ -1,5 +1,3 @@
-// lib/screens/train_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -157,8 +155,6 @@ class _TrainScreenState extends State<TrainScreen> {
       ),
     );
   }
-
-  // This helper method is now correctly inside the class
   Widget _buildEmoji(int value, String emoji) {
     return AnimatedEmojiButton(
       emoji: emoji,
@@ -170,4 +166,4 @@ class _TrainScreenState extends State<TrainScreen> {
       },
     );
   }
-} // <-- THIS WAS THE MISSING BRACE
+}

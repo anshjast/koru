@@ -41,13 +41,12 @@ class _GradientButtonState extends State<GradientButton> {
           padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            // --- UPDATED LIGHT RED GRADIENT ---
             gradient: isDisabled
                 ? null
                 : const LinearGradient(
               colors: [
-                Color(0xFFEF5350), // Light Red
-                Color(0xFF5C6BC0), // Indigo
+                Color(0xFFEF5350),
+                Color(0xFF5C6BC0),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -56,7 +55,6 @@ class _GradientButtonState extends State<GradientButton> {
             boxShadow: [
               if (!isDisabled)
                 BoxShadow(
-                  // --- UPDATED SHADOW COLOR ---
                   color: const Color(0xFF5C6BC0).withOpacity(0.3),
                   blurRadius: 15,
                   offset: const Offset(0, 5),

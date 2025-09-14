@@ -1,12 +1,9 @@
-// lib/widgets/calorie_dialog.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// This is now a standalone function
 void showCalorieDialog({
   required BuildContext context,
-  DocumentSnapshot? doc, // Pass the document if we are editing
+  DocumentSnapshot? doc,
 }) {
   final _calorieLogCollection = FirebaseFirestore.instance.collection('calorieLog');
   final bool isEditing = doc != null;

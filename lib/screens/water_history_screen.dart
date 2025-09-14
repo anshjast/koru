@@ -1,11 +1,8 @@
-// lib/screens/water_history_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
-// Enum to manage the selected timeframe
 enum TimeFrame { week, month, year }
 
 class WaterHistoryScreen extends StatefulWidget {
@@ -17,7 +14,7 @@ class WaterHistoryScreen extends StatefulWidget {
 
 class _WaterHistoryScreenState extends State<WaterHistoryScreen> {
   TimeFrame _selectedTimeFrame = TimeFrame.week;
-  final int _dailyTarget = 2000; // Assuming the same target for consistency
+  final int _dailyTarget = 2000;
 
   @override
   Widget build(BuildContext context) {
@@ -51,13 +48,12 @@ class _WaterHistoryScreenState extends State<WaterHistoryScreen> {
                 children: [
                   _buildChart(chartData),
                   const SizedBox(height: 24),
-                  // --- THIS ROW CONTAINS THE FIX ---
                   Row(
                     children: [
                       Expanded(
                         child: _buildStatCard('Average', '${stats['average'].toStringAsFixed(0)} ml'),
                       ),
-                      const SizedBox(width: 12), // Add spacing between cards
+                      const SizedBox(width: 12),
                       Expanded(
                         child: _buildStatCard('Consistency', '${stats['consistency'].toStringAsFixed(0)}%'),
                       ),
@@ -75,9 +71,6 @@ class _WaterHistoryScreenState extends State<WaterHistoryScreen> {
       ),
     );
   }
-
-  // --- UI WIDGETS ---
-
   Widget _buildTimeFrameSelector() {
     return SegmentedButton<TimeFrame>(
       segments: const <ButtonSegment<TimeFrame>>[
@@ -159,10 +152,7 @@ class _WaterHistoryScreenState extends State<WaterHistoryScreen> {
       ),
     );
   }
-
-  // --- DATA PROCESSING LOGIC ---
   Map<String, dynamic> _processDataForChart(List<QueryDocumentSnapshot> docs, TimeFrame timeFrame) {
-    // 1. Group all entries by day
     final Map<DateTime, int> dailyTotals = {};
     for (var doc in docs) {
       final timestamp = (doc['timestamp'] as Timestamp).toDate();
@@ -170,8 +160,6 @@ class _WaterHistoryScreenState extends State<WaterHistoryScreen> {
       final amount = (doc['amount'] as num).toInt();
       dailyTotals.update(day, (value) => value + amount, ifAbsent: () => amount);
     }
-
-    // 2. Determine date range and number of points for the chart
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     DateTime startDate;
@@ -187,15 +175,12 @@ class _WaterHistoryScreenState extends State<WaterHistoryScreen> {
         startDate = today.subtract(Duration(days: numberOfDays - 1));
         break;
       case TimeFrame.year:
-        numberOfDays = 12; // We'll show 12 months for the year view
+        numberOfDays = 12;
         startDate = DateTime(today.year, today.month - 11, 1);
         break;
     }
-
-    // 3. Create a complete list of spots, filling missing days with 0
     final List<FlSpot> spots = [];
-    final List<double> dailyValues = []; // For calculating stats
-
+    final List<double> dailyValues = [];
     if (timeFrame == TimeFrame.year) {
       final Map<int, int> monthlyTotals = {};
       dailyTotals.forEach((date, amount) {
@@ -203,7 +188,6 @@ class _WaterHistoryScreenState extends State<WaterHistoryScreen> {
       });
       for (int i = 0; i < 12; i++) {
         int month = startDate.month + i;
-        // This logic is tricky, needs to handle year wrap-around
         if (month > 12) month -= 12;
         spots.add(FlSpot(i.toDouble(), (monthlyTotals[month] ?? 0).toDouble()));
         dailyValues.add((monthlyTotals[month] ?? 0).toDouble());
@@ -216,8 +200,6 @@ class _WaterHistoryScreenState extends State<WaterHistoryScreen> {
         dailyValues.add(value);
       }
     }
-
-    // 4. Calculate stats from the generated list
     double average = 0;
     int consistency = 0;
     double bestDay = 0;

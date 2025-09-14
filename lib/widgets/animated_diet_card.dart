@@ -1,10 +1,8 @@
-// lib/widgets/animated_diet_card.dart
-
 import 'package:flutter/material.dart';
 
 class AnimatedDietCard extends StatefulWidget {
   final Widget child;
-  final int delayMilliseconds; // To stagger the animations
+  final int delayMilliseconds;
 
   const AnimatedDietCard({
     super.key,
@@ -30,8 +28,6 @@ class _AnimatedDietCardState extends State<AnimatedDietCard>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-
-    // Start the animation after the specified delay
     Future.delayed(Duration(milliseconds: widget.delayMilliseconds), () {
       if (mounted) {
         _controller.forward();
