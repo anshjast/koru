@@ -1,70 +1,84 @@
+// lib/screens/dashboard_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:koru/screens/train_screen.dart'; // <-- MAKE SURE THIS LINE IS HERE
+import 'package:koru/widgets/gradient_app_bar.dart';
+import 'package:koru/widgets/gradient_card.dart';
+import 'package:koru/screens/goals_screen.dart';
+
+class KoruModule {
+  final String title;
+  final IconData icon;
+
+  KoruModule({required this.title, required this.icon});
+}
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // This stream gets the latest Big 3 entry
-    final Stream<QuerySnapshot> prioritiesStream = FirebaseFirestore.instance
-        .collection('big3')
-        .orderBy('timestamp', descending: true)
-        .limit(1) // We only want the most recent one
-        .snapshots();
+    final List<KoruModule> modules = [
+      KoruModule(title: "Today's Focus", icon: Icons.center_focus_strong),
+      KoruModule(title: 'Train', icon: Icons.fitness_center),
+      KoruModule(title: 'Goals', icon: Icons.flag),
+      KoruModule(title: 'Diet', icon: Icons.restaurant_menu),
+      KoruModule(title: 'Schedule', icon: Icons.watch_later),
+      KoruModule(title: 'Skills', icon: Icons.construction),
+      KoruModule(title: 'Avoid', icon: Icons.do_not_disturb_on),
+      KoruModule(title: 'Upgrade', icon: Icons.spa),
+    ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Koru Dashboard'),
-        centerTitle: true,
-      ),
-      body: ListView( // Use a ListView for future scrolling
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          // Widget to display Today's Focus
-          const Text(
-            "Today's Focus",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+      backgroundColor: Colors.black,
+      appBar: const GradientAppBar(),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(16.0, 24.0, 16.0, 16.0),
+        child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 0.8,
           ),
-          const SizedBox(height: 10),
-          StreamBuilder<QuerySnapshot>(
-            stream: prioritiesStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Text('No priorities found.');
-              }
+          itemCount: modules.length,
+          itemBuilder: (context, index) {
+            final module = modules[index];
 
-              var latestEntry = snapshot.data!.docs.first;
-              String p1 = latestEntry['priority1'];
-              String p2 = latestEntry['priority2'];
-              String p3 = latestEntry['priority3'];
-
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (p1.isNotEmpty) Text('1. $p1', style: const TextStyle(fontSize: 16)),
-                      if (p2.isNotEmpty) const SizedBox(height: 8),
-                      if (p2.isNotEmpty) Text('2. $p2', style: const TextStyle(fontSize: 16)),
-                      if (p3.isNotEmpty) const SizedBox(height: 8),
-                      if (p3.isNotEmpty) Text('3. $p3', style: const TextStyle(fontSize: 16)),
-                    ],
+            return GradientCard(
+              onTap: () {
+                if (module.title == 'Train') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TrainScreen()),
+                  );
+                } else if (module.title == 'Goals') { // <-- ADD THIS BLOCK
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const GoalsScreen()),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${module.title} screen is not yet built.')),
+                  );
+                }
+              },
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(module.icon, size: 48),
+                  const SizedBox(height: 12),
+                  Text(
+                    module.title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                ),
-              );
-            },
-          ),
-
-          // We will add the other module widgets here later
-          const Divider(height: 40),
-          const Center(child: Text('Other modules will go here...')),
-
-        ],
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
