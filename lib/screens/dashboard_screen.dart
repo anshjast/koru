@@ -7,6 +7,7 @@ import 'package:koru/widgets/gradient_app_bar.dart';
 import 'package:koru/widgets/gradient_card.dart';
 import 'package:koru/screens/goals_screen.dart';
 import 'package:koru/screens/avoid_screen.dart';
+import 'package:koru/screens/diet_screen.dart';
 
 class KoruModule {
   final String title;
@@ -59,10 +60,15 @@ class DashboardScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(builder: (context) => const GoalsScreen()),
                   );
-                } else if (module.title == 'Avoid') { // <-- ADD THIS BLOCK
+                } else if (module.title == 'Avoid') {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const AvoidScreen()),
+                  );
+                } else if (module.title == 'Diet') { // <-- ADD THIS BLOCK
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const DietScreen()),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
