@@ -6,6 +6,7 @@ import 'package:koru/screens/train_screen.dart'; // <-- MAKE SURE THIS LINE IS H
 import 'package:koru/widgets/gradient_app_bar.dart';
 import 'package:koru/widgets/gradient_card.dart';
 import 'package:koru/screens/goals_screen.dart';
+import 'package:koru/screens/avoid_screen.dart';
 
 class KoruModule {
   final String title;
@@ -53,10 +54,15 @@ class DashboardScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(builder: (context) => const TrainScreen()),
                   );
-                } else if (module.title == 'Goals') { // <-- ADD THIS BLOCK
+                } else if (module.title == 'Goals') {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const GoalsScreen()),
+                  );
+                } else if (module.title == 'Avoid') { // <-- ADD THIS BLOCK
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AvoidScreen()),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
