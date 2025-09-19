@@ -15,30 +15,45 @@ class GradientCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = gradientColors ??
-        [const Color(0xFFEF5350), const Color(0xFF5C6BC0)];
+        [const Color(0xFFEA5358), const Color(0xFFF7BA2B)];
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: colors,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(5.0),
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
-            borderRadius: BorderRadius.circular(15),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: colors,
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(15),
-              child: Center(
+          boxShadow: [
+            BoxShadow(
+              color: colors[0].withOpacity(0.5),
+              blurRadius: 25,
+              spreadRadius: 2,
+              offset: const Offset(-5, 5),
+            ),
+            BoxShadow(
+              color: colors[1].withOpacity(0.5),
+              blurRadius: 25,
+              spreadRadius: 2,
+              offset: const Offset(5, 5),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(5.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF181818),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(11),
                 child: child,
               ),
             ),
