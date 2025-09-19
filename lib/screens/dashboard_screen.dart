@@ -1,11 +1,13 @@
+// lib/screens/dashboard_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:koru/screens/train_screen.dart';
 import 'package:koru/widgets/gradient_app_bar.dart';
 import 'package:koru/widgets/gradient_card.dart';
 import 'package:koru/screens/goals_screen.dart';
 import 'package:koru/screens/avoid_screen.dart';
 import 'package:koru/screens/diet_screen.dart';
+import 'package:koru/screens/schedule_screen.dart';
 
 class KoruModule {
   final String title;
@@ -63,10 +65,15 @@ class DashboardScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(builder: (context) => const AvoidScreen()),
                   );
-                } else if (module.title == 'Diet') { // <-- ADD THIS BLOCK
+                } else if (module.title == 'Diet') { // <-- FIX: Added a missing opening brace {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const DietScreen()),
+                  );
+                } else if (module.title == 'Schedule') { // <-- NEW: Added navigation for the Schedule screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ScheduleScreen()),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "250321900875",
+    "project_id": "koru-bedba",
+    "storage_bucket": "koru-bedba.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:250321900875:android:db07f4f2b1b9e0d9e084ce",
+        "android_client_info": {
+          "package_name": "com.anshjast.koru.koru"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrX4b02WTXgqaWQCcPaXxwZnU5YSl6GPM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
