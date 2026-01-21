@@ -34,33 +34,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _navigateToScreen(String title) {
     Widget? screen;
     switch (title) {
-      case 'Train':
-        screen = const TrainScreen();
-        break;
-      case 'Goals':
-        screen = const GoalsScreen();
-        break;
-      case 'Avoid':
-        screen = const AvoidScreen();
-        break;
-      case 'Diet':
-        screen = const DietScreen();
-        break;
-      case 'Schedule':
-        screen = const ScheduleScreen();
-        break;
+      case 'Train': screen = const TrainScreen(); break;
+      case 'Goals': screen = const GoalsScreen(); break;
+      case 'Avoid': screen = const AvoidScreen(); break;
+      case 'Diet': screen = const DietScreen(); break;
+      case 'Schedule': screen = const ScheduleScreen(); break;
     }
 
     if (screen != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => screen!),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (context) => screen!));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('$title screen is not yet built.')),
       );
     }
+  }
+
+  void _showEditDialog(DocumentSnapshot task) {
+    final TextEditingController editController = TextEditingController(text: task['name']);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text("Edit Task", style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: editController,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.red)),
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              task.reference.update({'name': editController.text});
+              Navigator.pop(context);
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -152,11 +172,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           _buildProgressHeader(tasks, today),
                           const SizedBox(height: 16),
-                          Column(
-                            children: tasks.map((task) {
-                              return _buildTaskItem(task, today);
-                            }).toList(),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: tasks.length,
+                            itemBuilder: (context, index) {
+                              return _buildTaskItem(tasks[index], today);
+                            },
                           ),
+                          const SizedBox(height: 80),
                         ],
                       ),
                     ),
@@ -245,54 +269,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
         DocumentSnapshot? historyDoc;
         if (historySnapshot.hasData && historySnapshot.data!.docs.isNotEmpty) {
           historyDoc = historySnapshot.data!.docs.first;
-          final historyData = historyDoc.data() as Map<String, dynamic>;
-          isDone = historyData['completed'] ?? false;
+          isDone = (historyDoc.data() as Map<String, dynamic>)['completed'] ?? false;
         }
 
-        return GestureDetector(
-          onTap: () {
-            if (isDone && historyDoc != null) {
-              historyDoc.reference.delete();
-            } else {
-              _historyCollection.add({
-                'taskId': taskId,
-                'date': today,
-                'completed': true,
-              });
-            }
-          },
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isDone ? Colors.green.withOpacity(0.1) : Colors.grey.shade900,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isDone ? Colors.green.withOpacity(0.3) : Colors.grey.shade700,
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(
+            color: isDone ? Colors.green.withOpacity(0.1) : Colors.grey.shade900,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isDone ? Colors.green.withOpacity(0.3) : Colors.grey.shade700,
+            ),
+          ),
+          child: ListTile(
+            onTap: () {
+              if (isDone && historyDoc != null) {
+                historyDoc.reference.delete();
+              } else {
+                _historyCollection.add({
+                  'taskId': taskId,
+                  'date': today,
+                  'completed': true,
+                });
+              }
+            },
+            onLongPress: () => _showEditDialog(task),
+            leading: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDone ? Colors.green : Colors.transparent,
+                border: Border.all(color: isDone ? Colors.green : Colors.grey, width: 2),
+              ),
+              child: isDone ? const Icon(Icons.check, size: 14, color: Colors.black) : null,
+            ),
+            title: Text(
+              taskData['name'] ?? 'Unnamed Task',
+              style: TextStyle(
+                color: isDone ? Colors.grey : Colors.white,
+                decoration: isDone ? TextDecoration.lineThrough : null,
               ),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isDone ? Colors.green : Colors.transparent,
-                    border: Border.all(color: isDone ? Colors.green : Colors.grey, width: 2),
-                  ),
-                  child: isDone ? const Icon(Icons.check, size: 14, color: Colors.black) : null,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  taskData['name'],
-                  style: TextStyle(
-                    color: isDone ? Colors.grey : Colors.white,
-                    decoration: isDone ? TextDecoration.lineThrough : null,
-                    decorationColor: Colors.white,
-                  ),
-                ),
-              ],
+            trailing: IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+              onPressed: () => _tasksCollection.doc(taskId).delete(),
             ),
           ),
         );
