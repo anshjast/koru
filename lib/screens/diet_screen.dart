@@ -49,7 +49,7 @@ class DietScreen extends StatelessWidget {
                         title: "HYDRATION",
                         desc: "Track daily water intake",
                         icon: Icons.water_drop_rounded,
-                        onAdd: () {},
+                        onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const WaterIntakeScreen())),
                         onLog: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const WaterIntakeScreen())),
                       ),
                       const SizedBox(height: 20),
@@ -58,7 +58,7 @@ class DietScreen extends StatelessWidget {
                         title: "CALORIE LOG",
                         desc: "Manage your energy balance",
                         icon: Icons.bolt_rounded,
-                        onAdd: () {},
+                        onAdd: () => _showAddCalorieDialog(context),
                         onLog: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CalorieTrackerScreen())),
                       ),
                       const SizedBox(height: 100),
@@ -160,4 +160,104 @@ class DietScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showAddCalorieDialog(BuildContext context) {
+  final Color calorieColor = const Color(0xFFFF9F0A);
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: const Color(0xFF0D0D0F),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(25),
+        side: BorderSide(color: calorieColor.withOpacity(0.2)),
+      ),
+      title: const Text("LOG NUTRITION",
+          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildNeonTextField("Meal Name", Icons.restaurant_rounded, calorieColor),
+            const SizedBox(height: 12),
+            _buildNeonTextField("Calories (kcal)", Icons.bolt_rounded, calorieColor, isNumber: true),
+            const SizedBox(height: 20),
+
+            Row(
+              children: [
+                Expanded(child: _buildNeonTextField("PRO (g)", Icons.fitness_center, Colors.blueAccent, isNumber: true)),
+                const SizedBox(width: 8),
+                Expanded(child: _buildNeonTextField("CARB (g)", Icons.grain, Colors.greenAccent, isNumber: true)),
+                const SizedBox(width: 8),
+                Expanded(child: _buildNeonTextField("FAT (g)", Icons.invert_colors, Colors.redAccent, isNumber: true)),
+              ],
+            ),
+
+            const SizedBox(height: 25),
+            const Text("— OR —", style: TextStyle(color: Colors.white24, fontSize: 10, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+
+            GestureDetector(
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const MealsLibraryScreen()));
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: calorieColor.withOpacity(0.5)),
+                  color: calorieColor.withOpacity(0.05),
+                ),
+                child: Center(
+                  child: Text("SELECT FROM LIBRARY",
+                      style: TextStyle(color: calorieColor, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("CANCEL", style: TextStyle(color: Colors.white38)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: calorieColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: const Text("LOG", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildNeonTextField(String hint, IconData icon, Color color, {bool isNumber = false}) {
+  return TextField(
+    keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+    style: const TextStyle(color: Colors.white, fontSize: 14),
+    decoration: InputDecoration(
+      prefixIcon: Icon(icon, color: color, size: 18),
+      hintText: hint,
+      hintStyle: const TextStyle(color: Colors.white24),
+      filled: true,
+      fillColor: Colors.white.withOpacity(0.05),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: const BorderSide(color: Colors.white10),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide(color: color.withOpacity(0.5)),
+      ),
+    ),
+  );
 }

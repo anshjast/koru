@@ -15,117 +15,241 @@ class WaterHistoryScreen extends StatefulWidget {
 class _WaterHistoryScreenState extends State<WaterHistoryScreen> {
   TimeFrame _selectedTimeFrame = TimeFrame.week;
   final int _dailyTarget = 2000;
+  final Color waterColor = const Color(0xFF00D2FF);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text('Hydration History'),
-        backgroundColor: Colors.black,
-        elevation: 0,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
+      backgroundColor: const Color(0xFF08080A),
+      body: Stack(
         children: [
-          _buildTimeFrameSelector(),
-          const SizedBox(height: 24),
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('waterLog').orderBy('timestamp').snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Center(child: Text('Not enough data to show history.'));
-              }
-
-              final processedData = _processDataForChart(snapshot.data!.docs, _selectedTimeFrame);
-              final chartData = processedData['chartData'] as List<FlSpot>;
-              final stats = processedData['stats'] as Map<String, dynamic>;
-
-              return Column(
-                children: [
-                  _buildChart(chartData),
-                  const SizedBox(height: 24),
-                  Row(
+          Positioned(
+            top: -50,
+            right: -50,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: waterColor.withOpacity(0.08),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(context),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
                     children: [
-                      Expanded(
-                        child: _buildStatCard('Average', '${stats['average'].toStringAsFixed(0)} ml'),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard('Consistency', '${stats['consistency'].toStringAsFixed(0)}%'),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard('Best Day', '${stats['bestDay'].toStringAsFixed(0)} ml'),
-                      ),
+                      _buildTimeFrameSelector(),
+                      const SizedBox(height: 30),
+                      _buildMainDataStream(),
+                      const SizedBox(height: 100),
                     ],
                   ),
-                ],
-              );
-            },
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-  Widget _buildTimeFrameSelector() {
-    return SegmentedButton<TimeFrame>(
-      segments: const <ButtonSegment<TimeFrame>>[
-        ButtonSegment(value: TimeFrame.week, label: Text('Week')),
-        ButtonSegment(value: TimeFrame.month, label: Text('Month')),
-        ButtonSegment(value: TimeFrame.year, label: Text('Year')),
-      ],
-      selected: {_selectedTimeFrame},
-      onSelectionChanged: (Set<TimeFrame> newSelection) {
-        setState(() {
-          _selectedTimeFrame = newSelection.first;
-        });
-      },
-      style: SegmentedButton.styleFrom(
-        foregroundColor: Colors.white,
-        selectedForegroundColor: Colors.black,
-        selectedBackgroundColor: Colors.white,
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.05),
+                border: Border.all(color: Colors.white10),
+              ),
+              child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+            ),
+          ),
+          const SizedBox(width: 20),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("ANALYTICS", style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w900)),
+              Text("HISTORY", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+            ],
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildTimeFrameSelector() {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF121214),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Row(
+        children: TimeFrame.values.map((frame) {
+          bool isSelected = _selectedTimeFrame == frame;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedTimeFrame = frame),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected ? waterColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Center(
+                  child: Text(
+                    frame.name.toUpperCase(),
+                    style: TextStyle(
+                      color: isSelected ? Colors.black : Colors.white38,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildMainDataStream() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('waterLog').orderBy('timestamp').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+        final processedData = _processDataForChart(snapshot.data!.docs, _selectedTimeFrame);
+        final chartData = processedData['chartData'] as List<FlSpot>;
+        final stats = processedData['stats'] as Map<String, dynamic>;
+
+        return Column(
+          children: [
+            _buildChartContainer(chartData),
+            const SizedBox(height: 30),
+            _buildStatsGrid(stats),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildChartContainer(List<FlSpot> spots) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 30, 20, 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F0F12),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: _buildChart(spots),
     );
   }
 
   Widget _buildChart(List<FlSpot> spots) {
     double maxYValue = spots.fold(0, (max, spot) => spot.y > max ? spot.y : max);
-    double chartMaxY = maxYValue > _dailyTarget ? maxYValue : _dailyTarget.toDouble();
-    if (chartMaxY == 0) chartMaxY = _dailyTarget.toDouble();
+    double chartMaxY = maxYValue > 0 ? maxYValue * 1.5 : _dailyTarget.toDouble();
 
     return AspectRatio(
       aspectRatio: 1.7,
       child: LineChart(
         LineChartData(
           minY: 0,
-          maxY: chartMaxY * 1.2,
-          backgroundColor: const Color(0xffE6F4F1),
-          gridData: const FlGridData(show: false),
+          maxY: chartMaxY,
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: true,
+            horizontalInterval: chartMaxY / 4,
+            getDrawingHorizontalLine: (value) => FlLine(
+              color: Colors.white.withOpacity(0.03),
+              strokeWidth: 1,
+            ),
+            getDrawingVerticalLine: (value) => FlLine(
+              color: Colors.white.withOpacity(0.03),
+              strokeWidth: 1,
+            ),
+          ),
           borderData: FlBorderData(show: false),
-          titlesData: const FlTitlesData(
-            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          titlesData: FlTitlesData(
+            show: true,
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 30,
+                interval: _selectedTimeFrame == TimeFrame.week ? 1 : 5,
+                getTitlesWidget: (value, meta) {
+                  String text = '';
+                  if (_selectedTimeFrame == TimeFrame.week) {
+                    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                    if (value.toInt() >= 0 && value.toInt() < 7) text = days[value.toInt()];
+                  } else if (_selectedTimeFrame == TimeFrame.month) {
+                    text = '${value.toInt() + 1}';
+                  } else if (_selectedTimeFrame == TimeFrame.year) {
+                    const months = ['Jan', 'Mar', 'May', 'Jul', 'Sep', 'Nov'];
+                    int idx = value.toInt();
+                    if (idx % 2 == 0 && idx < 12) text = months[idx ~/ 2];
+                  }
+                  return SideTitleWidget(
+                    axisSide: meta.axisSide,
+                    space: 10,
+                    child: Text(
+                      text,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.4),
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          lineTouchData: LineTouchData(
+            handleBuiltInTouches: true,
+            touchTooltipData: LineTouchTooltipData(
+              tooltipBgColor: const Color(0xFF121214),
+              tooltipRoundedRadius: 8,
+              getTooltipItems: (touchedSpots) => touchedSpots.map((spot) {
+                return LineTooltipItem(
+                  '${spot.y.toInt()} ml',
+                  TextStyle(color: waterColor, fontWeight: FontWeight.bold, fontSize: 12),
+                );
+              }).toList(),
+            ),
           ),
           lineBarsData: [
             LineChartBarData(
               spots: spots,
               isCurved: true,
-              color: const Color(0xff0D1F3C),
-              barWidth: 4,
+              curveSmoothness: 0.4,
+              color: waterColor,
+              barWidth: 2,
               isStrokeCapRound: true,
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
                 show: true,
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xff0D1F3C).withOpacity(0.3),
-                    const Color(0xff0D1F3C).withOpacity(0.0),
+                    waterColor.withOpacity(0.2),
+                    waterColor.withOpacity(0.0),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -138,20 +262,42 @@ class _WaterHistoryScreenState extends State<WaterHistoryScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
+  Widget _buildStatsGrid(Map<String, dynamic> stats) {
+    return Column(
+      children: [
+        Row(
           children: [
-            Text(title, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12), textAlign: TextAlign.center,),
-            const SizedBox(height: 4),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), textAlign: TextAlign.center,),
+            Expanded(child: _buildStatCard('AVERAGE', '${stats['average'].toStringAsFixed(0)} ML')),
+            const SizedBox(width: 16),
+            Expanded(child: _buildStatCard('BEST DAY', '${stats['bestDay'].toStringAsFixed(0)} ML')),
           ],
         ),
+        const SizedBox(height: 16),
+        _buildStatCard('CONSISTENCY', '${stats['consistency'].toStringAsFixed(0)}%', fullWidth: true),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, {bool fullWidth = false}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF121214),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: fullWidth ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+          const SizedBox(height: 8),
+          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 1)),
+        ],
       ),
     );
   }
+
   Map<String, dynamic> _processDataForChart(List<QueryDocumentSnapshot> docs, TimeFrame timeFrame) {
     final Map<DateTime, int> dailyTotals = {};
     for (var doc in docs) {
@@ -222,4 +368,3 @@ class _WaterHistoryScreenState extends State<WaterHistoryScreen> {
     };
   }
 }
-
