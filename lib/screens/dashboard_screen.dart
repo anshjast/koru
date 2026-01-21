@@ -8,6 +8,7 @@ import 'package:koru/screens/schedule_screen.dart';
 import 'package:koru/screens/tasks_screen.dart';
 import 'package:koru/screens/train_screen.dart';
 import 'package:koru/widgets/glow_plus_button.dart';
+import 'package:koru/screens/stats_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -18,27 +19,59 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final List<Map<String, dynamic>> cards = [
-    {"title": "FOCUS", "icon": Icons.center_focus_strong, "color": const Color(0xFFBB86FC)},
-    {"title": "TRAIN", "icon": Icons.fitness_center, "color": const Color(0xFF03DAC6)},
+    {
+      "title": "FOCUS",
+      "icon": Icons.center_focus_strong,
+      "color": const Color(0xFFBB86FC)
+    },
+    {
+      "title": "TRAIN",
+      "icon": Icons.fitness_center,
+      "color": const Color(0xFF03DAC6)
+    },
     {"title": "GOALS", "icon": Icons.flag, "color": Colors.purpleAccent},
-    {"title": "DIET", "icon": Icons.restaurant_menu, "color": Colors.orangeAccent},
-    {"title": "SCHEDULE", "icon": Icons.watch_later, "color": Colors.blueAccent},
+    {
+      "title": "DIET",
+      "icon": Icons.restaurant_menu,
+      "color": Colors.orangeAccent
+    },
+    {
+      "title": "SCHEDULE",
+      "icon": Icons.watch_later,
+      "color": Colors.blueAccent
+    },
     {"title": "SKILLS", "icon": Icons.construction, "color": Colors.grey},
-    {"title": "AVOID", "icon": Icons.do_not_disturb_on, "color": Colors.redAccent},
+    {
+      "title": "AVOID",
+      "icon": Icons.do_not_disturb_on,
+      "color": Colors.redAccent
+    },
     {"title": "UPGRADE", "icon": Icons.spa, "color": Colors.amberAccent},
   ];
 
-  final CollectionReference _tasksCollection = FirebaseFirestore.instance.collection('tasks');
-  final CollectionReference _historyCollection = FirebaseFirestore.instance.collection('taskHistory');
+  final CollectionReference _tasksCollection = FirebaseFirestore.instance
+      .collection('tasks');
+  final CollectionReference _historyCollection = FirebaseFirestore.instance
+      .collection('taskHistory');
 
   void _navigateToScreen(String title) {
     Widget? screen;
     switch (title) {
-      case 'TRAIN': screen = const TrainScreen(); break;
-      case 'GOALS': screen = const GoalsScreen(); break;
-      case 'AVOID': screen = const AvoidScreen(); break;
-      case 'DIET': screen = const DietScreen(); break;
-      case 'SCHEDULE': screen = const ScheduleScreen(); break;
+      case 'TRAIN':
+        screen = const TrainScreen();
+        break;
+      case 'GOALS':
+        screen = const GoalsScreen();
+        break;
+      case 'AVOID':
+        screen = const AvoidScreen();
+        break;
+      case 'DIET':
+        screen = const DietScreen();
+        break;
+      case 'SCHEDULE':
+        screen = const ScheduleScreen();
+        break;
     }
     if (screen != null) {
       Navigator.push(context, MaterialPageRoute(builder: (context) => screen!));
@@ -46,39 +79,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showEditDialog(DocumentSnapshot task) {
-    final TextEditingController editController = TextEditingController(text: task['name']);
+    final TextEditingController editController = TextEditingController(
+        text: task['name']);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF0D0D0F),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: Color(0xFFBB86FC), width: 0.5),
-        ),
-        title: const Text("Edit Task", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: editController,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFFBB86FC))),
-            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel", style: TextStyle(color: Colors.white38))),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFBB86FC),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      builder: (context) =>
+          AlertDialog(
+            backgroundColor: const Color(0xFF0D0D0F),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: const BorderSide(color: Color(0xFFBB86FC), width: 0.5),
             ),
-            onPressed: () {
-              task.reference.update({'name': editController.text});
-              Navigator.pop(context);
-            },
-            child: const Text("Save", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            title: const Text("Edit Task", style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
+            content: TextField(
+              controller: editController,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFFBB86FC))),
+                focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white)),
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                      "Cancel", style: TextStyle(color: Colors.white38))),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFBB86FC),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () {
+                  task.reference.update({'name': editController.text});
+                  Navigator.pop(context);
+                },
+                child: const Text("Save", style: TextStyle(
+                    color: Colors.black, fontWeight: FontWeight.bold)),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -116,7 +158,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       bottomNavigationBar: _buildBottomBar(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: GlowPlusButton(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TasksScreen())),
+        onPressed: () =>
+            Navigator.push(context,
+            MaterialPageRoute(builder: (context) => const TasksScreen())),
       ),
     );
   }
@@ -130,8 +174,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Welcome back,", style: TextStyle(color: Colors.white38, fontSize: 13, letterSpacing: 0.5)),
-              Text("ANSH", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 2)),
+              Text("Welcome back,", style: TextStyle(
+                  color: Colors.white38, fontSize: 13, letterSpacing: 0.5)),
+              Text("ANSH", style: TextStyle(color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2)),
             ],
           ),
           Container(
@@ -141,7 +189,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               color: Colors.white.withOpacity(0.05),
               border: Border.all(color: Colors.white10),
             ),
-            child: const Icon(Icons.settings_outlined, color: Colors.white, size: 22),
+            child: const Icon(
+                Icons.settings_outlined, color: Colors.white, size: 22),
           ),
         ],
       ),
@@ -179,7 +228,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 14),
                   Text(
                     card["title"],
-                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.2),
+                    style: const TextStyle(color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2),
                   ),
                 ],
               ),
@@ -195,7 +247,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return StreamBuilder<QuerySnapshot>(
       stream: _tasksCollection.orderBy('createdAt').snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFFBB86FC), strokeWidth: 2));
+        if (!snapshot.hasData) return const Center(
+            child: CircularProgressIndicator(
+                color: Color(0xFFBB86FC), strokeWidth: 2));
         final tasks = snapshot.data!.docs;
 
         return SingleChildScrollView(
@@ -205,13 +259,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               _buildProgressHeader(tasks, today),
               const SizedBox(height: 28),
-              const Text("DAILY OBJECTIVES", style: TextStyle(color: Colors.white24, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+              const Text("DAILY OBJECTIVES", style: TextStyle(
+                  color: Colors.white24,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5)),
               const SizedBox(height: 16),
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: tasks.length,
-                itemBuilder: (context, index) => _buildNeonTaskItem(tasks[index], today),
+                itemBuilder: (context, index) =>
+                    _buildNeonTaskItem(tasks[index], today),
               ),
               const SizedBox(height: 100),
             ],
@@ -223,9 +282,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildProgressHeader(List<QueryDocumentSnapshot> tasks, String today) {
     return StreamBuilder<QuerySnapshot>(
-      stream: _historyCollection.where('date', isEqualTo: today).where('completed', isEqualTo: true).snapshots(),
+      stream: _historyCollection.where('date', isEqualTo: today).where(
+          'completed', isEqualTo: true).snapshots(),
       builder: (context, historySnapshot) {
-        int completedCount = historySnapshot.hasData ? historySnapshot.data!.docs.length : 0;
+        int completedCount = historySnapshot.hasData ? historySnapshot.data!
+            .docs.length : 0;
         double progress = tasks.isNotEmpty ? completedCount / tasks.length : 0;
         return Container(
           padding: const EdgeInsets.all(24),
@@ -239,8 +300,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text("Consistency Score", style: TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w600)),
-                  Text("${(progress * 100).toInt()}%", style: const TextStyle(color: Color(0xFFBB86FC), fontWeight: FontWeight.w900, fontSize: 18)),
+                  const Text("Consistency Score", style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600)),
+                  Text("${(progress * 100).toInt()}%", style: const TextStyle(
+                      color: Color(0xFFBB86FC),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18)),
                 ],
               ),
               const SizedBox(height: 18),
@@ -265,27 +332,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final taskId = task.id;
 
     return StreamBuilder<QuerySnapshot>(
-      stream: _historyCollection.where('taskId', isEqualTo: taskId).where('date', isEqualTo: today).limit(1).snapshots(),
+      stream: _historyCollection.where('taskId', isEqualTo: taskId).where(
+          'date', isEqualTo: today).limit(1).snapshots(),
       builder: (context, historySnapshot) {
-        bool isDone = historySnapshot.hasData && historySnapshot.data!.docs.isNotEmpty;
+        bool isDone = historySnapshot.hasData &&
+            historySnapshot.data!.docs.isNotEmpty;
         return Container(
           margin: const EdgeInsets.only(bottom: 14),
           decoration: BoxDecoration(
             color: const Color(0xFF0F0F12),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: isDone ? const Color(0xFFBB86FC).withOpacity(0.4) : Colors.white.withOpacity(0.05)),
-            boxShadow: isDone ? [BoxShadow(color: const Color(0xFFBB86FC).withOpacity(0.05), blurRadius: 12)] : [],
+            border: Border.all(color: isDone
+                ? const Color(0xFFBB86FC).withOpacity(0.4)
+                : Colors.white.withOpacity(0.05)),
+            boxShadow: isDone ? [
+              BoxShadow(color: const Color(0xFFBB86FC).withOpacity(0.05),
+                  blurRadius: 12)
+            ] : [],
           ),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-            onTap: () => isDone ? historySnapshot.data!.docs.first.reference.delete() : _historyCollection.add({'taskId': taskId, 'date': today, 'completed': true}),
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20, vertical: 4),
+            onTap: () =>
+            isDone
+                ? historySnapshot.data!.docs.first.reference.delete()
+                : _historyCollection.add(
+                {'taskId': taskId, 'date': today, 'completed': true}),
             onLongPress: () => _showEditDialog(task),
-            leading: Icon(isDone ? Icons.check_circle_rounded : Icons.radio_button_off_rounded, color: isDone ? const Color(0xFFBB86FC) : Colors.white24, size: 26),
+            leading: Icon(isDone ? Icons.check_circle_rounded : Icons
+                .radio_button_off_rounded,
+                color: isDone ? const Color(0xFFBB86FC) : Colors.white24,
+                size: 26),
             title: Text(
               taskData['name'] ?? '',
-              style: TextStyle(color: isDone ? Colors.white38 : Colors.white, fontSize: 15, decoration: isDone ? TextDecoration.lineThrough : null, letterSpacing: 0.3),
+              style: TextStyle(color: isDone ? Colors.white38 : Colors.white,
+                  fontSize: 15,
+                  decoration: isDone ? TextDecoration.lineThrough : null,
+                  letterSpacing: 0.3),
             ),
-            trailing: IconButton(icon: const Icon(Icons.close_rounded, color: Colors.white10, size: 20), onPressed: () => _tasksCollection.doc(taskId).delete()),
+            trailing: IconButton(icon: const Icon(
+                Icons.close_rounded, color: Colors.white10, size: 20),
+                onPressed: () => _tasksCollection.doc(taskId).delete()),
           ),
         );
       },
@@ -305,7 +392,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildBottomNavItem(
             icon: Icons.bar_chart_rounded,
             isSelected: false,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StatsScreen())),
+            onTap: () =>
+                Navigator.push(context, MaterialPageRoute(
+                builder: (context) => const StatsScreen())),
           ),
           const SizedBox(width: 48),
           _buildBottomNavItem(
@@ -318,9 +407,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildBottomNavItem({required IconData icon, required bool isSelected, required VoidCallback onTap}) {
+  Widget _buildBottomNavItem(
+      {required IconData icon, required bool isSelected, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
-      child: Icon(icon, color: isSelected ? const Color(0xFFBB86FC) : Colors.white24, size: 30),
+      child: Icon(
+          icon, color: isSelected ? const Color(0xFFBB86FC) : Colors.white24,
+          size: 30),
     );
   }
+}

@@ -15,6 +15,7 @@ void showMealDialog({
   final _mealsCollection = FirebaseFirestore.instance.collection('meals');
   final bool isEditing = doc != null;
   var mealData = isEditing ? doc.data() as Map<String, dynamic> : {};
+  final accentColor = const Color(0xFFFF9F0A);
 
   final nameController = TextEditingController(text: mealData['name']);
   final caloriesController = TextEditingController(text: mealData['calories']);
@@ -29,41 +30,67 @@ void showMealDialog({
       return StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            title: Text(isEditing ? 'Edit Meal' : 'Add New Meal'),
+            backgroundColor: const Color(0xFF0D0D0F),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
+              side: BorderSide(color: accentColor.withOpacity(0.5), width: 1),
+            ),
+            title: Text(
+              isEditing ? 'EDIT MEAL' : 'ADD NEW MEAL',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 18),
+            ),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Meal Name')),
-                  TextField(controller: caloriesController, decoration: const InputDecoration(labelText: 'Total Calories'), keyboardType: TextInputType.number),
-                  TextField(controller: descriptionController, decoration: const InputDecoration(labelText: 'Description'), maxLines: 2),
-                  TextField(controller: ingredientsController, decoration: const InputDecoration(labelText: 'Ingredients (comma separated)'), maxLines: 2),
-                  const SizedBox(height: 20),
-                  const Text('Tags', style: TextStyle(fontWeight: FontWeight.bold)),
+                  _buildCyberField("Meal Name", Icons.fastfood_rounded, nameController, accentColor),
+                  const SizedBox(height: 16),
+                  _buildCyberField("Total Calories", Icons.bolt_rounded, caloriesController, accentColor, isNumber: true),
+                  const SizedBox(height: 16),
+                  _buildCyberField("Description", Icons.description_rounded, descriptionController, accentColor, maxLines: 2),
+                  const SizedBox(height: 16),
+                  _buildCyberField("Ingredients", Icons.list_alt_rounded, ingredientsController, accentColor, maxLines: 2),
+                  const SizedBox(height: 24),
+                  const Text('TAGS', style: TextStyle(color: Colors.white38, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5)),
+                  const SizedBox(height: 12),
                   Wrap(
                     spacing: 8.0,
+                    runSpacing: 8.0,
                     children: allTags.map((tag) {
                       final isSelected = selectedTags.contains(tag);
-                      final color = tagColors[tag] ?? Colors.grey;
+                      final tagBaseColor = tagColors[tag] ?? Colors.grey;
 
-                      return FilterChip(
-                        label: Text(tag),
-                        selected: isSelected,
-                        backgroundColor: color.withOpacity(0.2),
-                        selectedColor: color,
-                        checkmarkColor: Colors.white,
-                        labelStyle: TextStyle(
-                          color: isSelected ? Colors.white : Colors.white70,
-                        ),
-                        onSelected: (bool selected) {
+                      return GestureDetector(
+                        onTap: () {
                           setDialogState(() {
-                            if (selected) {
-                              selectedTags.add(tag);
-                            } else {
+                            if (isSelected) {
                               selectedTags.remove(tag);
+                            } else {
+                              selectedTags.add(tag);
                             }
                           });
                         },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? tagBaseColor.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected ? tagBaseColor : Colors.white10,
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            tag.toUpperCase(),
+                            style: TextStyle(
+                              color: isSelected ? tagBaseColor : Colors.white38,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ),
                       );
                     }).toList(),
                   ),
@@ -73,25 +100,37 @@ void showMealDialog({
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: const Text('CANCEL', style: TextStyle(color: Colors.white38, fontWeight: FontWeight.bold, letterSpacing: 1)),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  final meal = {
-                    'name': nameController.text.trim(),
-                    'calories': caloriesController.text.trim(),
-                    'description': descriptionController.text.trim(),
-                    'ingredients': ingredientsController.text.trim(),
-                    'tags': selectedTags,
-                  };
-                  if (isEditing) {
-                    _mealsCollection.doc(doc.id).update(meal);
-                  } else {
-                    _mealsCollection.add(meal);
-                  }
-                  Navigator.pop(context);
-                },
-                child: const Text('Save'),
+              Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(color: accentColor.withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                  onPressed: () {
+                    final meal = {
+                      'name': nameController.text.trim(),
+                      'calories': caloriesController.text.trim(),
+                      'description': descriptionController.text.trim(),
+                      'ingredients': ingredientsController.text.trim(),
+                      'tags': selectedTags,
+                    };
+                    if (isEditing) {
+                      _mealsCollection.doc(doc.id).update(meal);
+                    } else {
+                      _mealsCollection.add(meal);
+                    }
+                    Navigator.pop(context);
+                  },
+                  child: const Text('SAVE MEAL', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                ),
               ),
             ],
           );
@@ -101,3 +140,26 @@ void showMealDialog({
   );
 }
 
+Widget _buildCyberField(String label, IconData icon, TextEditingController controller, Color accent, {int maxLines = 1, bool isNumber = false}) {
+  return TextField(
+    controller: controller,
+    maxLines: maxLines,
+    keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+    style: const TextStyle(color: Colors.white, fontSize: 14),
+    decoration: InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+      prefixIcon: Icon(icon, color: accent, size: 20),
+      filled: true,
+      fillColor: Colors.white.withOpacity(0.03),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Colors.white10),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: accent.withOpacity(0.5)),
+      ),
+    ),
+  );
+}
