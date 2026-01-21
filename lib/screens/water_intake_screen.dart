@@ -220,17 +220,33 @@ class _WaterIntakeScreenState extends State<WaterIntakeScreen> {
             itemBuilder: (context, index) {
               var doc = snapshot.data!.docs[index];
               var timestamp = (doc['timestamp'] as Timestamp).toDate();
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF121214),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+              return Dismissible(
+                key: Key(doc.id),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(Icons.delete_sweep_rounded, color: Colors.redAccent),
                 ),
-                child: ListTile(
-                  leading: Icon(Icons.access_time_filled_rounded, color: waterColor.withOpacity(0.5), size: 20),
-                  title: Text(DateFormat.jm().format(timestamp), style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                  trailing: Text('+${doc['amount']} ml', style: TextStyle(color: waterColor, fontWeight: FontWeight.w900, fontSize: 14)),
+                onDismissed: (direction) {
+                  _waterLogCollection.doc(doc.id).delete();
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF121214),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  ),
+                  child: ListTile(
+                    leading: Icon(Icons.access_time_filled_rounded, color: waterColor.withOpacity(0.5), size: 20),
+                    title: Text(DateFormat.jm().format(timestamp), style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                    trailing: Text('+${doc['amount']} ml', style: TextStyle(color: waterColor, fontWeight: FontWeight.w900, fontSize: 14)),
+                  ),
                 ),
               );
             },
