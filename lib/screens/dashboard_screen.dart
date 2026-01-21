@@ -18,14 +18,14 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final List<Map<String, dynamic>> cards = [
-    {"title": "Today's Focus", "icon": Icons.center_focus_strong, "gradient": [Colors.blue, Colors.purple]},
-    {"title": "Train", "icon": Icons.fitness_center, "gradient": [Colors.teal, Colors.cyan]},
-    {"title": "Goals", "icon": Icons.flag, "gradient": [Colors.deepPurple, Colors.pink]},
-    {"title": "Diet", "icon": Icons.restaurant_menu, "gradient": [Colors.orange, Colors.red]},
-    {"title": "Schedule", "icon": Icons.watch_later, "gradient": [Colors.indigo, Colors.cyan]},
-    {"title": "Skills", "icon": Icons.construction, "gradient": [Colors.grey, Colors.blueGrey]},
-    {"title": "Avoid", "icon": Icons.do_not_disturb_on, "gradient": [Colors.red, Colors.pink]},
-    {"title": "Upgrade", "icon": Icons.spa, "gradient": [Colors.amber, Colors.red]},
+    {"title": "FOCUS", "icon": Icons.center_focus_strong, "color": const Color(0xFFBB86FC)},
+    {"title": "TRAIN", "icon": Icons.fitness_center, "color": const Color(0xFF03DAC6)},
+    {"title": "GOALS", "icon": Icons.flag, "color": Colors.purpleAccent},
+    {"title": "DIET", "icon": Icons.restaurant_menu, "color": Colors.orangeAccent},
+    {"title": "SCHEDULE", "icon": Icons.watch_later, "color": Colors.blueAccent},
+    {"title": "SKILLS", "icon": Icons.construction, "color": Colors.grey},
+    {"title": "AVOID", "icon": Icons.do_not_disturb_on, "color": Colors.redAccent},
+    {"title": "UPGRADE", "icon": Icons.spa, "color": Colors.amberAccent},
   ];
 
   final CollectionReference _tasksCollection = FirebaseFirestore.instance.collection('tasks');
@@ -34,19 +34,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _navigateToScreen(String title) {
     Widget? screen;
     switch (title) {
-      case 'Train': screen = const TrainScreen(); break;
-      case 'Goals': screen = const GoalsScreen(); break;
-      case 'Avoid': screen = const AvoidScreen(); break;
-      case 'Diet': screen = const DietScreen(); break;
-      case 'Schedule': screen = const ScheduleScreen(); break;
+      case 'TRAIN': screen = const TrainScreen(); break;
+      case 'GOALS': screen = const GoalsScreen(); break;
+      case 'AVOID': screen = const AvoidScreen(); break;
+      case 'DIET': screen = const DietScreen(); break;
+      case 'SCHEDULE': screen = const ScheduleScreen(); break;
     }
-
     if (screen != null) {
       Navigator.push(context, MaterialPageRoute(builder: (context) => screen!));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$title screen is not yet built.')),
-      );
     }
   }
 
@@ -55,28 +50,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text("Edit Task", style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFF0D0D0F),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: Color(0xFFBB86FC), width: 0.5),
+        ),
+        title: const Text("Edit Task", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         content: TextField(
           controller: editController,
           style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.red)),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFFBB86FC))),
             focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel", style: TextStyle(color: Colors.white38))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFBB86FC),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
             onPressed: () {
               task.reference.update({'name': editController.text});
               Navigator.pop(context);
             },
-            child: const Text("Save"),
+            child: const Text("Save", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -86,249 +85,242 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      backgroundColor: const Color(0xFF08080A),
+      body: Stack(
+        children: [
+          Positioned(
+            top: -100,
+            right: -50,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFBB86FC).withOpacity(0.08),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 20),
+                _buildModernCardList(),
+                const SizedBox(height: 30),
+                Expanded(child: _buildScrollableContent()),
+              ],
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomBar(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: GlowPlusButton(
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TasksScreen())),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Welcome back,", style: TextStyle(color: Colors.white38, fontSize: 13, letterSpacing: 0.5)),
+              Text("ANSH", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 2)),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(0.05),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: const Icon(Icons.settings_outlined, color: Colors.white, size: 22),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernCardList() {
+    return SizedBox(
+      height: 165,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        itemCount: cards.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 16),
+        itemBuilder: (context, index) {
+          final card = cards[index];
+          final color = card["color"] as Color;
+          return GestureDetector(
+            onTap: () => _navigateToScreen(card["title"]),
+            child: Container(
+              width: 135,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [color.withOpacity(0.15), color.withOpacity(0.02)],
+                ),
+                border: Border.all(color: color.withOpacity(0.25), width: 1.5),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(width: 40),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.red),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      "Koru",
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.settings, color: Colors.white),
-                    onPressed: () {},
+                  Icon(card["icon"], color: color, size: 34),
+                  const SizedBox(height: 14),
+                  Text(
+                    card["title"],
+                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.2),
                   ),
                 ],
               ),
             ),
-            SizedBox(
-              height: 180,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemBuilder: (context, index) {
-                  final card = cards[index];
-                  return GestureDetector(
-                    onTap: () => _navigateToScreen(card["title"]),
-                    child: Container(
-                      width: 150,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: List<Color>.from(card["gradient"])),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(card["icon"], color: Colors.white, size: 40),
-                            const SizedBox(height: 12),
-                            Text(
-                              card["title"],
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 16),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                separatorBuilder: (context, index) => const SizedBox(width: 12),
-                itemCount: cards.length,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _tasksCollection.orderBy('createdAt').snapshots(),
-                builder: (context, taskSnapshot) {
-                  if (!taskSnapshot.hasData) return const Center(child: CircularProgressIndicator());
-
-                  final tasks = taskSnapshot.data!.docs;
-                  final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-
-                  return SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
-                          _buildProgressHeader(tasks, today),
-                          const SizedBox(height: 16),
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: tasks.length,
-                            itemBuilder: (context, index) {
-                              return _buildTaskItem(tasks[index], today);
-                            },
-                          ),
-                          const SizedBox(height: 80),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomAppBar(
-        color: Colors.black,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8.0,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 5),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildBottomNavItem(icon: Icons.bar_chart, label: "Stats"),
-              _buildBottomNavItem(icon: Icons.person, label: "Profile"),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: GlowPlusButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const TasksScreen()),
           );
         },
       ),
     );
   }
 
-  Widget _buildProgressHeader(List<QueryDocumentSnapshot> tasks, String today) {
+  Widget _buildScrollableContent() {
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     return StreamBuilder<QuerySnapshot>(
-      stream: _historyCollection
-          .where('date', isEqualTo: today)
-          .where('completed', isEqualTo: true)
-          .snapshots(),
-      builder: (context, historySnapshot) {
-        int completedCount = historySnapshot.hasData ? historySnapshot.data!.docs.length : 0;
-        double progress = tasks.isNotEmpty ? completedCount / tasks.length : 0;
+      stream: _tasksCollection.orderBy('createdAt').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFFBB86FC), strokeWidth: 2));
+        final tasks = snapshot.data!.docs;
 
-        return Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Daily Progress", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                Text(
-                  "$completedCount/${tasks.length} completed",
-                  style: const TextStyle(color: Colors.grey),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.grey.shade800,
-              color: Colors.green,
-              minHeight: 8,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ],
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildProgressHeader(tasks, today),
+              const SizedBox(height: 28),
+              const Text("DAILY OBJECTIVES", style: TextStyle(color: Colors.white24, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+              const SizedBox(height: 16),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: tasks.length,
+                itemBuilder: (context, index) => _buildNeonTaskItem(tasks[index], today),
+              ),
+              const SizedBox(height: 100),
+            ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildTaskItem(DocumentSnapshot task, String today) {
+  Widget _buildProgressHeader(List<QueryDocumentSnapshot> tasks, String today) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _historyCollection.where('date', isEqualTo: today).where('completed', isEqualTo: true).snapshots(),
+      builder: (context, historySnapshot) {
+        int completedCount = historySnapshot.hasData ? historySnapshot.data!.docs.length : 0;
+        double progress = tasks.isNotEmpty ? completedCount / tasks.length : 0;
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F0F12),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.white.withOpacity(0.04)),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Consistency Score", style: TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w600)),
+                  Text("${(progress * 100).toInt()}%", style: const TextStyle(color: Color(0xFFBB86FC), fontWeight: FontWeight.w900, fontSize: 18)),
+                ],
+              ),
+              const SizedBox(height: 18),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: Colors.white.withOpacity(0.05),
+                  color: const Color(0xFFBB86FC),
+                  minHeight: 10,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNeonTaskItem(DocumentSnapshot task, String today) {
     final taskData = task.data() as Map<String, dynamic>;
     final taskId = task.id;
 
     return StreamBuilder<QuerySnapshot>(
-      stream: _historyCollection
-          .where('taskId', isEqualTo: taskId)
-          .where('date', isEqualTo: today)
-          .limit(1)
-          .snapshots(),
+      stream: _historyCollection.where('taskId', isEqualTo: taskId).where('date', isEqualTo: today).limit(1).snapshots(),
       builder: (context, historySnapshot) {
-        bool isDone = false;
-        DocumentSnapshot? historyDoc;
-        if (historySnapshot.hasData && historySnapshot.data!.docs.isNotEmpty) {
-          historyDoc = historySnapshot.data!.docs.first;
-          isDone = (historyDoc.data() as Map<String, dynamic>)['completed'] ?? false;
-        }
-
+        bool isDone = historySnapshot.hasData && historySnapshot.data!.docs.isNotEmpty;
         return Container(
-          margin: const EdgeInsets.symmetric(vertical: 6),
+          margin: const EdgeInsets.only(bottom: 14),
           decoration: BoxDecoration(
-            color: isDone ? Colors.green.withOpacity(0.1) : Colors.grey.shade900,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isDone ? Colors.green.withOpacity(0.3) : Colors.grey.shade700,
-            ),
+            color: const Color(0xFF0F0F12),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: isDone ? const Color(0xFFBB86FC).withOpacity(0.4) : Colors.white.withOpacity(0.05)),
+            boxShadow: isDone ? [BoxShadow(color: const Color(0xFFBB86FC).withOpacity(0.05), blurRadius: 12)] : [],
           ),
           child: ListTile(
-            onTap: () {
-              if (isDone && historyDoc != null) {
-                historyDoc.reference.delete();
-              } else {
-                _historyCollection.add({
-                  'taskId': taskId,
-                  'date': today,
-                  'completed': true,
-                });
-              }
-            },
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            onTap: () => isDone ? historySnapshot.data!.docs.first.reference.delete() : _historyCollection.add({'taskId': taskId, 'date': today, 'completed': true}),
             onLongPress: () => _showEditDialog(task),
-            leading: Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDone ? Colors.green : Colors.transparent,
-                border: Border.all(color: isDone ? Colors.green : Colors.grey, width: 2),
-              ),
-              child: isDone ? const Icon(Icons.check, size: 14, color: Colors.black) : null,
-            ),
+            leading: Icon(isDone ? Icons.check_circle_rounded : Icons.radio_button_off_rounded, color: isDone ? const Color(0xFFBB86FC) : Colors.white24, size: 26),
             title: Text(
-              taskData['name'] ?? 'Unnamed Task',
-              style: TextStyle(
-                color: isDone ? Colors.grey : Colors.white,
-                decoration: isDone ? TextDecoration.lineThrough : null,
-              ),
+              taskData['name'] ?? '',
+              style: TextStyle(color: isDone ? Colors.white38 : Colors.white, fontSize: 15, decoration: isDone ? TextDecoration.lineThrough : null, letterSpacing: 0.3),
             ),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-              onPressed: () => _tasksCollection.doc(taskId).delete(),
-            ),
+            trailing: IconButton(icon: const Icon(Icons.close_rounded, color: Colors.white10, size: 20), onPressed: () => _tasksCollection.doc(taskId).delete()),
           ),
         );
       },
     );
   }
 
-  Widget _buildBottomNavItem({required IconData icon, required String label}) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: Colors.grey),
-        const SizedBox(height: 2),
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-      ],
+  Widget _buildBottomBar() {
+    return Container(
+      height: 95,
+      decoration: const BoxDecoration(
+        color: Color(0xFF08080A),
+        border: Border(top: BorderSide(color: Colors.white10, width: 0.8)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildBottomNavItem(
+            icon: Icons.bar_chart_rounded,
+            isSelected: false,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StatsScreen())),
+          ),
+          const SizedBox(width: 48),
+          _buildBottomNavItem(
+            icon: Icons.person_outline_rounded,
+            isSelected: false,
+            onTap: () {},
+          ),
+        ],
+      ),
     );
   }
-}
+
+  Widget _buildBottomNavItem({required IconData icon, required bool isSelected, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Icon(icon, color: isSelected ? const Color(0xFFBB86FC) : Colors.white24, size: 30),
+    );
+  }
