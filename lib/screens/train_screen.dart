@@ -200,18 +200,39 @@ class _TrainScreenState extends State<TrainScreen> {
   }
 
   Widget _buildVitalsCard() {
-    return _buildGlassContainer(
-      title: "HARDWARE METRICS",
-      child: Column(
-        children: [
-          _buildVitalTile(Icons.directions_walk_rounded, "Movement", "Daily steps log"),
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: () => _showWeightUpdateDialog(context),
-            child: _buildVitalTile(Icons.monitor_weight_rounded, "Body Mass", "60 KG", isAdd: true),
+    final String todayId = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('dailyVitals').doc(todayId).snapshots(),
+      builder: (context, snapshot) {
+        String currentWeight = "60";
+
+        if (snapshot.hasData && snapshot.data!.exists) {
+          var data = snapshot.data!.data() as Map<String, dynamic>;
+          if (data.containsKey('weight')) {
+            currentWeight = data['weight'].toString();
+          }
+        }
+
+        return _buildGlassContainer(
+          title: "HARDWARE METRICS",
+          child: Column(
+            children: [
+              _buildVitalTile(Icons.directions_walk_rounded, "Movement", "Daily steps log"),
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () => _showWeightUpdateDialog(context),
+                child: _buildVitalTile(
+                    Icons.monitor_weight_rounded,
+                    "Body Mass",
+                    "$currentWeight KG",
+                    isAdd: true
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -309,7 +330,7 @@ class _TrainScreenState extends State<TrainScreen> {
               final String todayId = DateFormat('yyyy-MM-dd').format(DateTime.now());
               await FirebaseFirestore.instance.collection('dailyVitals').doc(todayId).set({
                 'weight': weightController.text.trim(),
-                'weightTimestamp': Timestamp.now(),
+                'timestamp': Timestamp.now(),
               }, SetOptions(merge: true));
               Navigator.pop(context);
             },
