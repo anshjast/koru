@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:koru/widgets/animated_emoji_button.dart';
-import 'package:koru/widgets/animated_muscle_chip.dart';
 
 class TrainScreen extends StatefulWidget {
   const TrainScreen({super.key});
@@ -17,7 +15,10 @@ class _TrainScreenState extends State<TrainScreen> {
   final List<String> _muscleGroups = [
     'Chest', 'Back', 'Legs', 'Arms', 'Biceps', 'Triceps', 'Shoulders', 'Core', 'Cardio'
   ];
+
   final Color trainColor = const Color(0xFF00BFA5);
+  final Color obsidianBg = const Color(0xFF08080A);
+  final Color glassBg = const Color(0xFF121214);
 
   void _saveEnergyLevel() {
     if (_energyLevel != null) {
@@ -26,83 +27,8 @@ class _TrainScreenState extends State<TrainScreen> {
         'energyLevel': _energyLevel,
         'timestamp': Timestamp.now(),
       }, SetOptions(merge: true));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: trainColor,
-          content: const Text('Energy level saved!', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        ),
-      );
+      _showSnackBar('ENERGY SYNCHRONIZED');
     }
-  }
-  void _showWeightUpdateDialog(BuildContext context) {
-    final TextEditingController weightController = TextEditingController(text: "60");
-    final Color trainColor = const Color(0xFF00BFA5);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF0D0D0F),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28),
-          side: BorderSide(color: trainColor.withOpacity(0.3)),
-        ),
-        title: const Text("UPDATE WEIGHT",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16)),
-        content: SizedBox(
-          width: MediaQuery.of(context).size.width,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("",
-                  style: TextStyle(color: Colors.white24, fontSize: 12)),
-              const SizedBox(height: 20),
-              TextField(
-                controller: weightController,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-                decoration: InputDecoration(
-                  suffixText: "KG",
-                  suffixStyle: TextStyle(color: trainColor, fontWeight: FontWeight.bold),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.05),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: const BorderSide(color: Colors.white10),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide(color: trainColor.withOpacity(0.5)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("CANCEL", style: TextStyle(color: Colors.white38)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: trainColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () async {
-              final String todayId = DateFormat('yyyy-MM-dd').format(DateTime.now());
-              await FirebaseFirestore.instance.collection('dailyVitals').doc(todayId).set({
-                'weight': weightController.text.trim(),
-                'weightTimestamp': Timestamp.now(),
-              }, SetOptions(merge: true));
-              Navigator.pop(context);
-            },
-            child: const Text("SAVE", style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900)),
-          ),
-        ],
-      ),
-    );
   }
 
   void _saveTrainedMuscles() {
@@ -112,19 +38,24 @@ class _TrainScreenState extends State<TrainScreen> {
         'trainedMuscles': _selectedMuscleGroups,
         'lastTrainedTimestamp': Timestamp.now(),
       }, SetOptions(merge: true));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: trainColor,
-          content: const Text('Trained muscles logged!', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        ),
-      );
+      _showSnackBar('TARGETS LOGGED');
     }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: trainColor,
+        behavior: SnackBarBehavior.floating,
+        content: Text(message, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 12)),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF08080A),
+      backgroundColor: obsidianBg,
       body: Stack(
         children: [
           Positioned(
@@ -185,7 +116,7 @@ class _TrainScreenState extends State<TrainScreen> {
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("FITNESS", style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w900)),
+              Text("PHYSICAL ENGINE", style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w900)),
               Text("TRAINING", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
             ],
           ),
@@ -199,20 +130,33 @@ class _TrainScreenState extends State<TrainScreen> {
       title: "ENERGY CHECK-IN",
       child: Column(
         children: [
-          const Text("How are you feeling today?", style: TextStyle(color: Colors.white38, fontSize: 13)),
-          const SizedBox(height: 20),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildEmoji(1, '😞'),
-              _buildEmoji(2, '😐'),
-              _buildEmoji(3, '🙂'),
-              _buildEmoji(4, '😊'),
-              _buildEmoji(5, '🤩'),
-            ],
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [1, 2, 3, 4, 5].map((val) {
+              List<String> emojis = ['😞', '😐', '🙂', '😊', '🤩'];
+              bool isSelected = _energyLevel == val;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _energyLevel = val),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isSelected ? trainColor.withOpacity(0.15) : Colors.white.withOpacity(0.02),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: isSelected ? trainColor : Colors.white10),
+                    ),
+                    child: Center(
+                      child: Text(emojis[val - 1], style: const TextStyle(fontSize: 22)),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
           const SizedBox(height: 24),
-          _buildActionBtn("SAVE ENERGY LEVEL", _energyLevel != null ? _saveEnergyLevel : null),
+          _buildActionBtn("SYNC ENERGY", _energyLevel != null ? _saveEnergyLevel : null),
         ],
       ),
     );
@@ -220,24 +164,31 @@ class _TrainScreenState extends State<TrainScreen> {
 
   Widget _buildMuscleCard() {
     return _buildGlassContainer(
-      title: "LOG TRAINING",
+      title: "LOG TARGETS",
       child: Column(
         children: [
-          const Text("Select muscle groups trained", style: TextStyle(color: Colors.white38, fontSize: 13)),
-          const SizedBox(height: 20),
           Wrap(
             spacing: 8.0,
             runSpacing: 10.0,
             alignment: WrapAlignment.center,
             children: _muscleGroups.map((muscle) {
-              return AnimatedMuscleChip(
-                label: muscle,
-                isSelected: _selectedMuscleGroups.contains(muscle),
+              bool isSelected = _selectedMuscleGroups.contains(muscle);
+              return FilterChip(
+                label: Text(muscle, style: TextStyle(color: isSelected ? Colors.black : Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                selected: isSelected,
                 onSelected: (bool selected) {
                   setState(() {
                     selected ? _selectedMuscleGroups.add(muscle) : _selectedMuscleGroups.remove(muscle);
                   });
                 },
+                backgroundColor: glassBg,
+                selectedColor: trainColor,
+                checkmarkColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: isSelected ? trainColor : Colors.white10)
+                ),
               );
             }).toList(),
           ),
@@ -250,14 +201,14 @@ class _TrainScreenState extends State<TrainScreen> {
 
   Widget _buildVitalsCard() {
     return _buildGlassContainer(
-      title: "VITALS & TRACKING",
+      title: "HARDWARE METRICS",
       child: Column(
         children: [
-          _buildVitalTile(Icons.directions_walk_rounded, "Steps Today", "Google Fit pending"),
+          _buildVitalTile(Icons.directions_walk_rounded, "Movement", "Daily steps log"),
           const SizedBox(height: 12),
           GestureDetector(
             onTap: () => _showWeightUpdateDialog(context),
-            child: _buildVitalTile(Icons.monitor_weight_rounded, "Body Metrics", "60 KG ", isAdd: true),
+            child: _buildVitalTile(Icons.monitor_weight_rounded, "Body Mass", "60 KG", isAdd: true),
           ),
         ],
       ),
@@ -270,17 +221,13 @@ class _TrainScreenState extends State<TrainScreen> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [trainColor.withOpacity(0.12), trainColor.withOpacity(0.01)],
-        ),
-        border: Border.all(color: trainColor.withOpacity(0.2), width: 1.5),
+        color: glassBg,
+        border: Border.all(color: trainColor.withOpacity(0.1), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1)),
+          Text(title, style: TextStyle(color: trainColor, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
           const SizedBox(height: 20),
           child,
         ],
@@ -298,7 +245,6 @@ class _TrainScreenState extends State<TrainScreen> {
         decoration: BoxDecoration(
           color: isActive ? trainColor : Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(15),
-          boxShadow: isActive ? [BoxShadow(color: trainColor.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))] : [],
         ),
         child: Center(
           child: Text(label, style: TextStyle(color: isActive ? Colors.black : Colors.white24, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.5)),
@@ -311,33 +257,66 @@ class _TrainScreenState extends State<TrainScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withOpacity(0.02),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: trainColor, size: 22),
+          Icon(icon, color: trainColor, size: 20),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-              Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 11)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                Text(subtitle, style: const TextStyle(color: Colors.white24, fontSize: 11), overflow: TextOverflow.ellipsis),
+              ],
+            ),
           ),
-          const Spacer(),
-          if (isAdd) Icon(Icons.add_circle_outline_rounded, color: trainColor, size: 20),
+          if (isAdd) Icon(Icons.add_circle_outline_rounded, color: trainColor.withOpacity(0.5), size: 18),
         ],
       ),
     );
   }
 
-  Widget _buildEmoji(int value, String emoji) {
-    return AnimatedEmojiButton(
-      emoji: emoji,
-      isSelected: _energyLevel == value,
-      onTap: () => setState(() => _energyLevel = value),
+  void _showWeightUpdateDialog(BuildContext context) {
+    final TextEditingController weightController = TextEditingController(text: "60");
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: glassBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28), side: BorderSide(color: trainColor.withOpacity(0.2))),
+        title: const Text("UPDATE MASS", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+        content: TextField(
+          controller: weightController,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          decoration: InputDecoration(
+            suffixText: "KG",
+            suffixStyle: TextStyle(color: trainColor),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.03),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL", style: TextStyle(color: Colors.white24))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: trainColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            onPressed: () async {
+              final String todayId = DateFormat('yyyy-MM-dd').format(DateTime.now());
+              await FirebaseFirestore.instance.collection('dailyVitals').doc(todayId).set({
+                'weight': weightController.text.trim(),
+                'weightTimestamp': Timestamp.now(),
+              }, SetOptions(merge: true));
+              Navigator.pop(context);
+            },
+            child: const Text("SAVE", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 }

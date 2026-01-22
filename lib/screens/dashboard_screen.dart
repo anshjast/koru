@@ -36,13 +36,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       "icon": Icons.watch_later,
       "color": Colors.blueAccent
     },
-    {"title": "SKILLS", "icon": Icons.construction, "color": Colors.grey},
+    {"title": "SKILLS", "icon": Icons.construction, "color": Colors.amberAccent},
     {
       "title": "AVOID",
       "icon": Icons.do_not_disturb_on,
       "color": Colors.redAccent
     },
-    {"title": "UPGRADE", "icon": Icons.spa, "color": Colors.amberAccent},
   ];
 
   final CollectionReference _tasksCollection = FirebaseFirestore.instance
@@ -70,6 +69,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         break;
       case 'SKILLS':
         screen = const SkillsScreen();
+        break;
     }
     if (screen != null) {
       Navigator.push(context, MaterialPageRoute(builder: (context) => screen!));
