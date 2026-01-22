@@ -5,6 +5,7 @@ import 'package:koru/screens/avoid_screen.dart';
 import 'package:koru/screens/diet_screen.dart';
 import 'package:koru/screens/goals_screen.dart';
 import 'package:koru/screens/schedule_screen.dart';
+import 'package:koru/screens/skills_screen.dart';
 import 'package:koru/screens/tasks_screen.dart';
 import 'package:koru/screens/train_screen.dart';
 import 'package:koru/widgets/glow_plus_button.dart';
@@ -67,6 +68,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'SCHEDULE':
         screen = const ScheduleScreen();
         break;
+      case 'SKILLS':
+        screen = const SkillsScreen();
     }
     if (screen != null) {
       Navigator.push(context, MaterialPageRoute(builder: (context) => screen!));
