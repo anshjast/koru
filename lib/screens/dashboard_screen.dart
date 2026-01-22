@@ -20,11 +20,6 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final List<Map<String, dynamic>> cards = [
     {
-      "title": "FOCUS",
-      "icon": Icons.center_focus_strong,
-      "color": const Color(0xFFBB86FC)
-    },
-    {
       "title": "TRAIN",
       "icon": Icons.fitness_center,
       "color": const Color(0xFF03DAC6)
