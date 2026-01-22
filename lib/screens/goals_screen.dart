@@ -12,7 +12,7 @@ class GoalsScreen extends StatefulWidget {
 
 class _GoalsScreenState extends State<GoalsScreen> {
   final _ootyCollection = FirebaseFirestore.instance.collection('ooty');
-  final _monthlyObjectives = FirebaseFirestore.instance.collection('monthlyObjectives');
+  final _dailyObjectives = FirebaseFirestore.instance.collection('dailyObjectives');
   final _weeklyObjectives = FirebaseFirestore.instance.collection('weeklyObjectives');
 
   final Color primaryAccent = Colors.purpleAccent;
@@ -33,6 +33,41 @@ class _GoalsScreenState extends State<GoalsScreen> {
     super.dispose();
   }
 
+  void _confirmComplete(BuildContext context, VoidCallback onConfirm) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: glassBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28), side: BorderSide(color: primaryAccent.withOpacity(0.2))),
+        title: const Text("MISSION COMPLETE?", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+        content: const Text("Accomplishing this will update your mission power-bars.", style: TextStyle(color: Colors.white38, fontSize: 13)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("NOT YET", style: TextStyle(color: Colors.white24))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: primaryAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            onPressed: () { Navigator.pop(context); onConfirm(); },
+            child: const Text("CONFIRM", style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, VoidCallback onConfirm) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: glassBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28), side: const BorderSide(color: Colors.redAccent, width: 0.5)),
+        title: const Text("ABORT MISSION?", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w900, fontSize: 16)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL", style: TextStyle(color: Colors.white24))),
+          TextButton(onPressed: () { Navigator.pop(context); onConfirm(); }, child: const Text("DELETE", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w900))),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,10 +80,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
             child: Container(
               width: 300,
               height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: primaryAccent.withOpacity(0.08),
-              ),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: primaryAccent.withOpacity(0.08)),
             ),
           ),
           Align(
@@ -57,60 +89,42 @@ class _GoalsScreenState extends State<GoalsScreen> {
               confettiController: _confettiController,
               blastDirectionality: BlastDirectionality.explosive,
               colors: [primaryAccent, Colors.white, Colors.deepPurple],
-              maxBlastForce: 20,
-              minBlastForce: 5,
-              emissionFrequency: 0.05,
-              numberOfParticles: 20,
-              gravity: 0.1,
             ),
           ),
           SafeArea(
             child: StreamBuilder<List<QuerySnapshot>>(
               stream: CombineLatestStream.list([
-                _monthlyObjectives.snapshots(),
+                _dailyObjectives.snapshots(),
                 _weeklyObjectives.snapshots(),
               ]),
               builder: (context, snapshot) {
-                int totalActive = 0;
-                int totalCompleted = 0;
+                double dailyProgress = 0;
+                double weeklyProgress = 0;
 
                 if (snapshot.hasData) {
-                  for (var querySnap in snapshot.data!) {
-                    for (var doc in querySnap.docs) {
-                      if (doc['isDone'] == true) {
-                        totalCompleted++;
-                      } else {
-                        totalActive++;
-                      }
-                    }
+                  var dailyDocs = snapshot.data![0].docs;
+                  var weeklyDocs = snapshot.data![1].docs;
+
+                  if (dailyDocs.isNotEmpty) {
+                    dailyProgress = dailyDocs.where((d) => d['isDone'] == true).length / dailyDocs.length;
+                  }
+                  if (weeklyDocs.isNotEmpty) {
+                    weeklyProgress = weeklyDocs.where((d) => d['isDone'] == true).length / weeklyDocs.length;
                   }
                 }
 
-                double progress = (totalActive + totalCompleted) == 0
-                    ? 0
-                    : totalCompleted / (totalActive + totalCompleted);
-
                 return Column(
                   children: [
-                    _buildPowerHeader(progress),
+                    _buildDualPowerHeader(dailyProgress, weeklyProgress),
                     Expanded(
                       child: ListView(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         children: [
                           _buildOotySection(),
                           const SizedBox(height: 32),
-                          _buildObjectiveSection(
-                            title: "ACTIVE MISSIONS",
-                            collection: _monthlyObjectives,
-                            isMonthly: true,
-                          ),
-                          _buildObjectiveSection(
-                            title: "",
-                            collection: _weeklyObjectives,
-                            isMonthly: false,
-                          ),
+                          _buildObjectiveSection(title: "DAILY MISSIONS", collection: _dailyObjectives, isDaily: true),
                           const SizedBox(height: 32),
-                          _buildHistorySection(),
+                          _buildObjectiveSection(title: "WEEKLY MISSIONS", collection: _weeklyObjectives, isDaily: false),
                           const SizedBox(height: 100),
                         ],
                       ),
@@ -130,7 +144,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
     );
   }
 
-  Widget _buildPowerHeader(double progress) {
+  Widget _buildDualPowerHeader(double daily, double weekly) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 25, 24, 20),
       child: Column(
@@ -139,35 +153,48 @@ class _GoalsScreenState extends State<GoalsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("GOALS HUB",
-                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+              const Text("GOALS HUB", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
               Icon(Icons.bolt_rounded, color: primaryAccent),
             ],
           ),
-          const SizedBox(height: 15),
-          Container(
-            height: 6,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: progress,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: primaryAccent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(color: primaryAccent.withOpacity(0.5), blurRadius: 10, spreadRadius: 1),
-                  ],
-                ),
+          const SizedBox(height: 20),
+          _buildMiniProgressBar("DAILY LOAD", daily),
+          const SizedBox(height: 12),
+          _buildMiniProgressBar("WEEKLY LOAD", weekly),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniProgressBar(String label, double progress) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(color: Colors.white24, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1)),
+            Text("${(progress * 100).toInt()}%", style: TextStyle(color: primaryAccent, fontSize: 9, fontWeight: FontWeight.w900)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Container(
+          height: 4,
+          width: double.infinity,
+          decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(10)),
+          child: FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: progress,
+            child: Container(
+              decoration: BoxDecoration(
+                color: primaryAccent,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [BoxShadow(color: primaryAccent.withOpacity(0.3), blurRadius: 8, spreadRadius: 1)],
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -178,28 +205,20 @@ class _GoalsScreenState extends State<GoalsScreen> {
         bool exists = snapshot.hasData && snapshot.data!.exists;
         var data = exists ? snapshot.data!.data() as Map<String, dynamic> : {};
         String ootyText = data['text'] ?? "NO PRIMARY OBJECTIVE DEPLOYED";
-        bool isDone = data['isDone'] ?? false;
-
-        if (isDone) return const SizedBox.shrink();
+        if (data['isDone'] ?? false) return const SizedBox.shrink();
 
         return _buildGlassContainer(
           title: "ONE OBJECTIVE THIS YEAR",
           accent: primaryAccent,
           child: ListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text(ootyText.toUpperCase(),
-                style: TextStyle(
-                    color: exists ? Colors.white : Colors.white10,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
-                    letterSpacing: 0.5
-                )),
+            title: Text(ootyText.toUpperCase(), style: TextStyle(color: exists ? Colors.white : Colors.white10, fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: 0.5)),
             trailing: exists ? _buildActionButtons(
-              onDone: () {
+              onDone: () => _confirmComplete(context, () {
                 _ootyCollection.doc('main').set({'isDone': true}, SetOptions(merge: true));
                 _confettiController.play();
-              },
-              onDelete: () => _ootyCollection.doc('main').delete(),
+              }),
+              onDelete: () => _confirmDelete(context, () => _ootyCollection.doc('main').delete()),
             ) : Icon(Icons.add_moderator_rounded, color: primaryAccent.withOpacity(0.2)),
             onTap: () => _showGoalDialog(collection: _ootyCollection, isOoty: true, docId: 'main', currentText: exists ? ootyText : null),
           ),
@@ -208,19 +227,16 @@ class _GoalsScreenState extends State<GoalsScreen> {
     );
   }
 
-  Widget _buildObjectiveSection({required String title, required CollectionReference collection, required bool isMonthly}) {
+  Widget _buildObjectiveSection({required String title, required CollectionReference collection, required bool isDaily}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (title.isNotEmpty) ...[
-          Text(title, style: const TextStyle(color: Colors.white24, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 2)),
-          const SizedBox(height: 16),
-        ],
+        Text(title, style: const TextStyle(color: Colors.white24, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 2)),
+        const SizedBox(height: 16),
         StreamBuilder<QuerySnapshot>(
           stream: collection.where('isDone', isEqualTo: false).orderBy('timestamp').snapshots(),
           builder: (context, snapshot) {
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return const SizedBox.shrink();
-
             return ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -230,21 +246,17 @@ class _GoalsScreenState extends State<GoalsScreen> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: glassBg,
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: Colors.white.withOpacity(0.05)),
-                  ),
+                  decoration: BoxDecoration(color: glassBg, borderRadius: BorderRadius.circular(22), border: Border.all(color: Colors.white.withOpacity(0.05))),
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(isMonthly ? Icons.calendar_month : Icons.view_week, color: primaryAccent.withOpacity(0.3), size: 18),
+                    leading: Icon(isDaily ? Icons.today : Icons.view_week, color: primaryAccent.withOpacity(0.3), size: 18),
                     title: Text(doc['text'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                     trailing: _buildActionButtons(
-                      onDone: () {
+                      onDone: () => _confirmComplete(context, () {
                         collection.doc(doc.id).update({'isDone': true});
                         _confettiController.play();
-                      },
-                      onDelete: () => collection.doc(doc.id).delete(),
+                      }),
+                      onDelete: () => _confirmDelete(context, () => collection.doc(doc.id).delete()),
                     ),
                     onTap: () => _showGoalDialog(collection: collection, docId: doc.id, currentText: doc['text']),
                   ),
@@ -261,62 +273,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
-          icon: Icon(Icons.check_circle_outline, color: primaryAccent.withOpacity(0.5)),
-          onPressed: onDone,
-          visualDensity: VisualDensity.compact,
-        ),
-        IconButton(
-          icon: const Icon(Icons.delete_outline, color: Colors.white10),
-          onPressed: onDelete,
-          visualDensity: VisualDensity.compact,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHistorySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("COMPLETED MISSIONS", style: TextStyle(color: Colors.white10, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 2)),
-        const SizedBox(height: 16),
-        StreamBuilder<List<QuerySnapshot>>(
-          stream: CombineLatestStream.list([
-            _monthlyObjectives.where('isDone', isEqualTo: true).snapshots(),
-            _weeklyObjectives.where('isDone', isEqualTo: true).snapshots(),
-          ]),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return const SizedBox.shrink();
-            List<QueryDocumentSnapshot> allDone = [];
-            for (var snap in snapshot.data!) {
-              allDone.addAll(snap.docs);
-            }
-            if (allDone.isEmpty) return const SizedBox.shrink();
-
-            return ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: allDone.length,
-              itemBuilder: (context, index) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.02),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    title: Text(allDone[index]['text'], style: const TextStyle(color: Colors.white24, decoration: TextDecoration.lineThrough, fontSize: 13)),
-                    leading: const Icon(Icons.check_circle_outline, color: Colors.white10, size: 16),
-                  ),
-                );
-              },
-            );
-          },
-        ),
+        IconButton(icon: Icon(Icons.check_circle_outline, color: primaryAccent.withOpacity(0.5)), onPressed: onDone, visualDensity: VisualDensity.compact),
+        IconButton(icon: const Icon(Icons.delete_outline, color: Colors.white10), onPressed: onDelete, visualDensity: VisualDensity.compact),
       ],
     );
   }
@@ -326,21 +284,14 @@ class _GoalsScreenState extends State<GoalsScreen> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [accent.withOpacity(0.15), accent.withOpacity(0.02)],
-        ),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [accent.withOpacity(0.15), accent.withOpacity(0.02)]),
         border: Border.all(color: accent.withOpacity(0.2), width: 1.5),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: TextStyle(color: accent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: TextStyle(color: accent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+        const SizedBox(height: 12),
+        child,
+      ]),
     );
   }
 
@@ -352,15 +303,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28), side: const BorderSide(color: Colors.white10)),
         title: const Text('NEW MISSION', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
         actions: [
-          TextButton(
-            onPressed: () { Navigator.pop(context); _showGoalDialog(collection: _weeklyObjectives); },
-            child: Text('WEEKLY', style: TextStyle(color: primaryAccent, fontWeight: FontWeight.w900)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: primaryAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-            onPressed: () { Navigator.pop(context); _showGoalDialog(collection: _monthlyObjectives); },
-            child: const Text('MONTHLY', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900)),
-          ),
+          TextButton(onPressed: () { Navigator.pop(context); _showGoalDialog(collection: _dailyObjectives); }, child: Text('DAILY', style: TextStyle(color: primaryAccent, fontWeight: FontWeight.w900))),
+          ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: primaryAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), onPressed: () { Navigator.pop(context); _showGoalDialog(collection: _weeklyObjectives); }, child: const Text('WEEKLY', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900))),
         ],
       ),
     );
