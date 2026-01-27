@@ -23,80 +23,148 @@ class _StatsScreenState extends State<StatsScreen> {
   final Color obsidianBg = const Color(0xFF08080A);
   final Color glassBg = const Color(0xFF121214);
 
-  double targetWeight = 65.0;
+  double targetWeight = 79.0;
   double userHeightCm = 168.0;
 
   String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadUserBiometrics();
-  }
-
-  Future<void> _loadUserBiometrics() async {
-    if (currentUid == null) return;
-    final doc = await FirebaseFirestore.instance.collection('users').doc(currentUid).get();
-    if (doc.exists && doc.data() != null) {
-      setState(() {
-        targetWeight = doc.data()!['targetWeight']?.toDouble() ?? 79.0;
-        userHeightCm = doc.data()!['height']?.toDouble() ?? 168.0;
-      });
-    }
-  }
-
-  Future<void> _saveUserBiometrics(double weight, double height) async {
-    if (currentUid == null) return;
-    await FirebaseFirestore.instance.collection('users').doc(currentUid).set({
-      'targetWeight': weight,
-      'height': height,
-    }, SetOptions(merge: true));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (currentUid == null) return const Scaffold(backgroundColor: Color(0xFF08080A), body: Center(child: Text("ACCESS DENIED: PLEASE LOGIN")));
-
-    return Scaffold(
-      backgroundColor: obsidianBg,
-      body: Stack(
-        children: [
-          Positioned(
-            top: -50,
-            left: -50,
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: analyticsColor.withOpacity(0.05),
-              ),
-            ),
+  void _showAddWeightDialog() {
+    final weightController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: glassBg,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+            side: BorderSide(color: analyticsColor.withOpacity(0.2))),
+        title: const Text("LOG CURRENT MASS",
+            style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+        content: TextField(
+          controller: weightController,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          decoration: InputDecoration(
+            suffixText: "KG",
+            suffixStyle: TextStyle(color: analyticsColor),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.03),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
           ),
-          SafeArea(
-            child: Column(
-              children: [
-                _buildHeader(),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    children: [
-                      _buildTimeFrameSelector(),
-                      const SizedBox(height: 24),
-                      _buildMainDataStream(),
-                      const SizedBox(height: 24),
-                      _buildSettingsButton(),
-                      const SizedBox(height: 100),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("ABORT", style: TextStyle(color: Colors.white24))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: analyticsColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            onPressed: () async {
+              if (currentUid != null && weightController.text.isNotEmpty) {
+                final double newWeight = double.parse(weightController.text);
+                final String todayId = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(currentUid)
+                    .collection('dailyVitals')
+                    .doc(todayId)
+                    .set({
+                  'weight': newWeight,
+                  'timestamp': FieldValue.serverTimestamp(),
+                }, SetOptions(merge: true));
+
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(currentUid)
+                    .update({'currentWeight': newWeight});
+              }
+              Navigator.pop(context);
+            },
+            child: const Text("COMMIT",
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    if (currentUid == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF08080A),
+        body: Center(
+            child: Text("ACCESS DENIED: PLEASE LOGIN",
+                style: TextStyle(color: Colors.white24))),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: obsidianBg,
+      floatingActionButton: _selectedMetric == MetricType.weight
+          ? FloatingActionButton(
+        backgroundColor: analyticsColor,
+        onPressed: _showAddWeightDialog,
+        child: const Icon(Icons.add_chart_rounded, color: Colors.black),
+      )
+          : null,
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUid)
+            .snapshots(),
+        builder: (context, userSnapshot) {
+          if (userSnapshot.hasData && userSnapshot.data!.exists) {
+            var data = userSnapshot.data!.data() as Map<String, dynamic>;
+            targetWeight = (data['targetWeight'] as num?)?.toDouble() ?? 79.0;
+            userHeightCm = (data['height'] as num?)?.toDouble() ?? 168.0;
+          }
+
+          return Stack(
+            children: [
+              Positioned(
+                top: -50,
+                left: -50,
+                child: Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: analyticsColor.withOpacity(0.05),
+                  ),
+                ),
+              ),
+              SafeArea(
+                child: Column(
+                  children: [
+                    _buildHeader(),
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        children: [
+                          _buildTimeFrameSelector(),
+                          const SizedBox(height: 24),
+                          _buildMainDataStream(),
+                          const SizedBox(height: 24),
+                          _buildSettingsButton(),
+                          const SizedBox(height: 100),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
 
   Widget _buildHeader() {
     return Padding(
@@ -106,18 +174,31 @@ class _StatsScreenState extends State<StatsScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("SYSTEM ANALYTICS", style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w900)),
+              const Text("SYSTEM ANALYTICS",
+                  style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 11,
+                      letterSpacing: 1.5,
+                      fontWeight: FontWeight.w900)),
               PopupMenuButton<MetricType>(
-                onSelected: (MetricType value) => setState(() => _selectedMetric = value),
+                onSelected: (MetricType value) =>
+                    setState(() => _selectedMetric = value),
                 offset: const Offset(0, 40),
                 color: glassBg,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                 child: Row(
                   children: [
                     Text(
-                      _selectedMetric == MetricType.weight ? "BODY METRICS" :
-                      _selectedMetric == MetricType.calories ? "FUEL INTAKE" : "AVOID STREAK",
-                      style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 1.5),
+                      _selectedMetric == MetricType.weight
+                          ? "BODY METRICS"
+                          : _selectedMetric == MetricType.calories
+                          ? "FUEL INTAKE"
+                          : "AVOID STREAK",
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5),
                     ),
                     const Icon(Icons.arrow_drop_down, color: Colors.white38),
                   ],
@@ -139,16 +220,21 @@ class _StatsScreenState extends State<StatsScreen> {
 
   IconData _getMetricIcon() {
     switch (_selectedMetric) {
-      case MetricType.weight: return Icons.monitor_weight_outlined;
-      case MetricType.calories: return Icons.local_fire_department_rounded;
-      case MetricType.streak: return Icons.shield_rounded;
+      case MetricType.weight:
+        return Icons.monitor_weight_outlined;
+      case MetricType.calories:
+        return Icons.local_fire_department_rounded;
+      case MetricType.streak:
+        return Icons.shield_rounded;
     }
   }
 
   PopupMenuItem<MetricType> _buildPopupItem(MetricType value, String text) {
     return PopupMenuItem(
       value: value,
-      child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+      child: Text(text,
+          style: const TextStyle(
+              color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -191,8 +277,11 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   Widget _buildMainDataStream() {
-    String collection = _selectedMetric == MetricType.weight ? 'dailyVitals' :
-    _selectedMetric == MetricType.calories ? 'dietLogs' : 'avoidHistory';
+    String collection = _selectedMetric == MetricType.weight
+        ? 'dailyVitals'
+        : _selectedMetric == MetricType.calories
+        ? 'dailyLog'
+        : 'avoidHabits';
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -203,10 +292,13 @@ class _StatsScreenState extends State<StatsScreen> {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(height: 200, child: Center(child: CircularProgressIndicator(color: Color(0xFFBB86FC))));
+          return const SizedBox(
+              height: 200,
+              child: Center(child: CircularProgressIndicator(color: Color(0xFFBB86FC))));
         }
 
-        final processedData = _processMetricTrend(snapshot.data?.docs ?? [], _selectedTimeFrame);
+        final processedData =
+        _processMetricTrend(snapshot.data?.docs ?? [], _selectedTimeFrame);
         final chartData = processedData['chartData'] as List<FlSpot>;
         final stats = processedData['stats'] as Map<String, dynamic>;
 
@@ -232,7 +324,8 @@ class _StatsScreenState extends State<StatsScreen> {
       minY = (minW - 5).clamp(0, double.infinity);
       maxY = (maxW + 5);
       if (targetWeight > maxY) maxY = targetWeight + 5;
-      if (targetWeight < minY) minY = (targetWeight - 5).clamp(0, double.infinity);
+      if (targetWeight < minY)
+        minY = (targetWeight - 5).clamp(0, double.infinity);
     }
 
     return Container(
@@ -276,7 +369,10 @@ class _StatsScreenState extends State<StatsScreen> {
                     label: HorizontalLineLabel(
                       show: true,
                       alignment: Alignment.topRight,
-                      style: TextStyle(color: targetGold.withOpacity(0.8), fontSize: 9, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: targetGold.withOpacity(0.8),
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold),
                       labelResolver: (line) => "TARGET: ${targetWeight.toInt()}KG",
                     ),
                   ),
@@ -307,7 +403,10 @@ class _StatsScreenState extends State<StatsScreen> {
                     return Padding(
                       padding: const EdgeInsets.only(top: 12),
                       child: Text(DateFormat('dd/MM').format(date),
-                          style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 8, fontWeight: FontWeight.bold)),
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.2),
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold)),
                     );
                   },
                 ),
@@ -353,8 +452,15 @@ class _StatsScreenState extends State<StatsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("BODY MASS INDEX", style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
-              Text(bmi < 25 ? "NORMAL" : "ALERT", style: TextStyle(color: analyticsColor, fontSize: 10, fontWeight: FontWeight.w900)),
+              const Text("BODY MASS INDEX",
+                  style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5)),
+              Text(bmi < 25 ? "NORMAL" : "ALERT",
+                  style: TextStyle(
+                      color: analyticsColor, fontSize: 10, fontWeight: FontWeight.w900)),
             ],
           ),
           const SizedBox(height: 20),
@@ -370,10 +476,26 @@ class _StatsScreenState extends State<StatsScreen> {
                     sectionsSpace: 4,
                     centerSpaceRadius: 60,
                     sections: [
-                      PieChartSectionData(color: Colors.blue.withOpacity(0.2), value: 25, showTitle: false, radius: 12),
-                      PieChartSectionData(color: analyticsColor.withOpacity(0.8), value: 25, showTitle: false, radius: 12),
-                      PieChartSectionData(color: Colors.orange.withOpacity(0.2), value: 25, showTitle: false, radius: 12),
-                      PieChartSectionData(color: Colors.red.withOpacity(0.2), value: 25, showTitle: false, radius: 12),
+                      PieChartSectionData(
+                          color: Colors.blue.withOpacity(0.2),
+                          value: 25,
+                          showTitle: false,
+                          radius: 12),
+                      PieChartSectionData(
+                          color: analyticsColor.withOpacity(0.8),
+                          value: 25,
+                          showTitle: false,
+                          radius: 12),
+                      PieChartSectionData(
+                          color: Colors.orange.withOpacity(0.2),
+                          value: 25,
+                          showTitle: false,
+                          radius: 12),
+                      PieChartSectionData(
+                          color: Colors.red.withOpacity(0.2),
+                          value: 25,
+                          showTitle: false,
+                          radius: 12),
                     ],
                   ),
                 ),
@@ -382,8 +504,16 @@ class _StatsScreenState extends State<StatsScreen> {
                 bottom: 10,
                 child: Column(
                   children: [
-                    Text(bmi.toStringAsFixed(1), style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
-                    const Text("SCORE", style: TextStyle(color: Colors.white24, fontSize: 9, fontWeight: FontWeight.bold)),
+                    Text(bmi.toStringAsFixed(1),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900)),
+                    const Text("SCORE",
+                        style: TextStyle(
+                            color: Colors.white24,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -400,13 +530,18 @@ class _StatsScreenState extends State<StatsScreen> {
       children: [
         Row(
           children: [
-            Expanded(child: _buildStatCard('AVG VALUE', '${stats['average'].toStringAsFixed(1)} $unit')),
+            Expanded(
+                child: _buildStatCard(
+                    'AVG VALUE', '${stats['average'].toStringAsFixed(1)} $unit')),
             const SizedBox(width: 16),
-            Expanded(child: _buildStatCard('PEAK VALUE', '${stats['peak'].toStringAsFixed(1)} $unit')),
+            Expanded(
+                child: _buildStatCard(
+                    'PEAK VALUE', '${stats['peak'].toStringAsFixed(1)} $unit')),
           ],
         ),
         const SizedBox(height: 16),
-        _buildStatCard('LATEST LOG', '${stats['latest'].toStringAsFixed(1)} $unit', fullWidth: true),
+        _buildStatCard('LATEST LOG', '${stats['latest'].toStringAsFixed(1)} $unit',
+            fullWidth: true),
       ],
     );
   }
@@ -423,9 +558,19 @@ class _StatsScreenState extends State<StatsScreen> {
       child: Column(
         crossAxisAlignment: fullWidth ? CrossAxisAlignment.center : CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+          Text(title,
+              style: const TextStyle(
+                  color: Colors.white38,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5)),
           const SizedBox(height: 8),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20, letterSpacing: 0.5)),
+          Text(value,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 20,
+                  letterSpacing: 0.5)),
         ],
       ),
     );
@@ -447,7 +592,12 @@ class _StatsScreenState extends State<StatsScreen> {
           children: [
             Icon(Icons.tune_rounded, color: targetGold, size: 18),
             const SizedBox(width: 12),
-            const Text("UPDATE BIOMETRICS", style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.5)),
+            const Text("UPDATE BIOMETRICS",
+                style: TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                    letterSpacing: 1.5)),
           ],
         ),
       ),
@@ -455,34 +605,46 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   void _showSettingsDialog() {
+    final weightController = TextEditingController(text: targetWeight.toString());
+    final heightController = TextEditingController(text: userHeightCm.toString());
+
     showDialog(
       context: context,
       builder: (context) {
-        double tempWeight = targetWeight;
-        double tempHeight = userHeightCm;
         return AlertDialog(
           backgroundColor: glassBg,
-          title: const Text("ADJUST BIOMETRICS", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          title: const Text("ADJUST BIOMETRICS",
+              style: TextStyle(
+                  color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDialogField("TARGET WEIGHT (KG)", targetWeight, (v) => tempWeight = v),
+              _buildDialogField("TARGET WEIGHT (KG)", weightController),
               const SizedBox(height: 16),
-              _buildDialogField("HEIGHT (CM)", userHeightCm, (v) => tempHeight = v),
+              _buildDialogField("HEIGHT (CM)", heightController),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL", style: TextStyle(color: Colors.white24))),
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("CANCEL", style: TextStyle(color: Colors.white24))),
             TextButton(
               onPressed: () async {
-                setState(() {
-                  targetWeight = tempWeight;
-                  userHeightCm = tempHeight;
-                });
-                await _saveUserBiometrics(tempWeight, tempHeight);
+                if (currentUid != null) {
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(currentUid)
+                      .set({
+                    'targetWeight':
+                    double.tryParse(weightController.text) ?? targetWeight,
+                    'height': double.tryParse(heightController.text) ?? userHeightCm,
+                  }, SetOptions(merge: true));
+                }
                 Navigator.pop(context);
               },
-              child: Text("SAVE", style: TextStyle(color: analyticsColor, fontWeight: FontWeight.bold)),
+              child: Text("SAVE",
+                  style: TextStyle(
+                      color: analyticsColor, fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -490,31 +652,38 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _buildDialogField(String label, double initialValue, Function(double) onChanged) {
+  Widget _buildDialogField(String label, TextEditingController controller) {
     return TextField(
+      controller: controller,
       keyboardType: TextInputType.number,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white38, fontSize: 10),
-        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+        enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
       ),
-      onChanged: (v) => onChanged(double.tryParse(v) ?? initialValue),
     );
   }
 
   String _getUnit() {
     switch (_selectedMetric) {
-      case MetricType.weight: return 'KG';
-      case MetricType.calories: return 'KCAL';
-      case MetricType.streak: return 'DAYS';
+      case MetricType.weight:
+        return 'KG';
+      case MetricType.calories:
+        return 'KCAL';
+      case MetricType.streak:
+        return 'DAYS';
     }
   }
 
   Map<String, dynamic> _processMetricTrend(List<QueryDocumentSnapshot> docs, TimeFrame frame) {
     Map<DateTime, double> dataMap = {};
-    String key = _selectedMetric == MetricType.weight ? 'weight' :
-    _selectedMetric == MetricType.calories ? 'calories' : 'streakDays';
+    String key = _selectedMetric == MetricType.weight
+        ? 'weight'
+        : _selectedMetric == MetricType.calories
+        ? 'calories'
+        : 'streakDays';
 
     for (var doc in docs) {
       var data = doc.data() as Map<String, dynamic>;
@@ -527,7 +696,8 @@ class _StatsScreenState extends State<StatsScreen> {
 
     DateTime now = DateTime.now();
     int days = (frame == TimeFrame.week) ? 7 : (frame == TimeFrame.month ? 30 : 365);
-    DateTime start = DateTime(now.year, now.month, now.day).subtract(Duration(days: days - 1));
+    DateTime start =
+    DateTime(now.year, now.month, now.day).subtract(Duration(days: days - 1));
 
     List<FlSpot> spots = [];
     List<double> values = [];
@@ -540,17 +710,9 @@ class _StatsScreenState extends State<StatsScreen> {
       if (dataMap.containsKey(current)) {
         val = dataMap[current]!;
       } else {
-        DateTime? prevDate = sortedDates.reversed.firstWhere((d) => d.isBefore(current), orElse: () => DateTime(2000));
-        DateTime? nextDate = sortedDates.firstWhere((d) => d.isAfter(current), orElse: () => DateTime(2100));
-
-        if (dataMap.containsKey(prevDate) && dataMap.containsKey(nextDate)) {
-          int totalGap = nextDate.difference(prevDate).inDays;
-          int currentGap = current.difference(prevDate).inDays;
-          double diff = dataMap[nextDate]! - dataMap[prevDate]!;
-          val = dataMap[prevDate]! + (diff * (currentGap / totalGap));
-        } else {
-          val = dataMap[prevDate] ?? 0.0;
-        }
+        DateTime? prevDate =
+            sortedDates.reversed.where((d) => d.isBefore(current)).firstOrNull;
+        val = dataMap[prevDate] ?? 0.0;
       }
       spots.add(FlSpot(i.toDouble(), val));
       values.add(val);
@@ -561,7 +723,11 @@ class _StatsScreenState extends State<StatsScreen> {
 
     return {
       'chartData': spots,
-      'stats': {'average': avg, 'peak': max, 'latest': values.isNotEmpty ? values.last : 0.0}
+      'stats': {
+        'average': avg,
+        'peak': max,
+        'latest': values.isNotEmpty ? values.last : 0.0
+      }
     };
   }
 }

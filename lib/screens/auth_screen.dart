@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:koru/models/auth_service.dart';
+import 'package:koru/screens/profile_setup_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -24,17 +25,17 @@ class _AuthScreenState extends State<AuthScreen> {
         await auth.login(_emailController.text, _passwordController.text);
       } else {
         await auth.signUp(_emailController.text, _passwordController.text);
+        if (!mounted) return;
+
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const ProfileSetupScreen())
+        );
       }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.redAccent,
-          content: Text(
-            e.toString().replaceAll(RegExp(r'\[.*?\]'), ''),
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-        ),
+          SnackBar(content: Text(e.toString().replaceAll(RegExp(r'\[.*?\]'), '')))
       );
     }
   }

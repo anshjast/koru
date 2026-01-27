@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:koru/screens/auth_screen.dart';
 import 'package:koru/screens/dashboard_screen.dart';
+import 'package:koru/screens/profile_setup_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,24 +18,41 @@ class KoruApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Koru',
       debugShowCheckedModeBanner: false,
+      title: 'KORU',
       theme: ThemeData(
         brightness: Brightness.dark,
-        primarySwatch: Colors.teal,
+        useMaterial3: true,
       ),
       home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(), //
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator(color: Color(0xFFBB86FC))),
-            );
-          }
-          if (snapshot.hasData) {
-            return const DashboardScreen();
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, authSnapshot) {
+          if (authSnapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
           }
 
+          if (authSnapshot.hasData) {
+            return FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(authSnapshot.data!.uid)
+                  .get(),
+              builder: (context, userSnapshot) {
+                if (userSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(body: Center(child: CircularProgressIndicator()));
+                }
+
+                if (userSnapshot.hasData && userSnapshot.data!.exists) {
+                  var data = userSnapshot.data!.data() as Map<String, dynamic>;
+                  if (data['setupComplete'] == true) {
+                    return const DashboardScreen();
+                  }
+                }
+
+                return const ProfileSetupScreen();
+              },
+            );
+          }
           return const AuthScreen();
         },
       ),

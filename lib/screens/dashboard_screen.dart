@@ -112,9 +112,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           StreamBuilder<DocumentSnapshot>(
             stream: FirebaseFirestore.instance.collection('users').doc(currentUid).snapshots(),
             builder: (context, snapshot) {
-              String name = "ANSH";
+              String name = "USER";
               if (snapshot.hasData && snapshot.data!.exists) {
-                name = (snapshot.data!.data() as Map<String, dynamic>)['name'] ?? name;
+                var data = snapshot.data!.data() as Map<String, dynamic>;
+                name = data['name'] ?? "USER";
               }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
