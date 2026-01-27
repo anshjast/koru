@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:koru/screens/avoid_screen.dart';
 import 'package:koru/screens/diet_screen.dart';
@@ -29,8 +30,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     {"title": "AVOID", "icon": Icons.do_not_disturb_on, "color": Colors.redAccent},
   ];
 
-  final CollectionReference _tasksCollection = FirebaseFirestore.instance.collection('tasks');
-  final CollectionReference _historyCollection = FirebaseFirestore.instance.collection('taskHistory');
+  String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
+
+  CollectionReference get _tasksCollection => FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('tasks');
+
+  CollectionReference get _historyCollection => FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('taskHistory');
 
   void _navigateToScreen(String title) {
     Widget? screen;
@@ -49,6 +59,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (currentUid == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF08080A),
+        body: Center(child: Text("ACCESS DENIED: PLEASE LOGIN", style: TextStyle(color: Colors.white24))),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF08080A),
       body: Stack(
@@ -93,7 +110,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance.collection('userProfile').doc('main_user').snapshots(),
+            stream: FirebaseFirestore.instance.collection('users').doc(currentUid).snapshots(),
             builder: (context, snapshot) {
               String name = "ANSH";
               if (snapshot.hasData && snapshot.data!.exists) {
@@ -239,9 +256,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-            onTap: () => isDone
-                ? historySnapshot.data!.docs.first.reference.delete()
-                : _historyCollection.add({'taskId': taskId, 'date': today, 'completed': true}),
+            onTap: () {
+              if (isDone) {
+                historySnapshot.data!.docs.first.reference.delete();
+              } else {
+                _historyCollection.add({'taskId': taskId, 'date': today, 'completed': true});
+              }
+            },
             leading: Icon(isDone ? Icons.check_circle_rounded : Icons.radio_button_off_rounded, color: isDone ? const Color(0xFFBB86FC) : Colors.white24, size: 26),
             title: Text(
               taskData['name'] ?? '',

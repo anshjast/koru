@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 class ScheduleScreen extends StatefulWidget {
@@ -11,8 +12,6 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  final _checklistCollection = FirebaseFirestore.instance.collection('powerDownSequence');
-  final _vitalsCollection = FirebaseFirestore.instance.collection('dailyVitals');
   final String _todayId = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
   final Color primaryAccent = Colors.blueAccent;
@@ -22,6 +21,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Timer? _timer;
   String _timeRemaining = "00:00:00";
   double _dayProgress = 1.0;
+
+  String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
+
+  CollectionReference get _checklistCollection => FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('powerDownSequence');
+
+  CollectionReference get _vitalsCollection => FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('dailyVitals');
 
   @override
   void initState() {
@@ -39,7 +50,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final now = DateTime.now();
       final midnight = DateTime(now.year, now.month, now.day + 1);
-      final totalSecondsInDay = 86400;
+      const totalSecondsInDay = 86400;
 
       final difference = midnight.difference(now);
       final secondsRemaining = difference.inSeconds;
@@ -63,6 +74,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (currentUid == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF08080A),
+        body: Center(child: Text("ACCESS DENIED: PLEASE LOGIN", style: TextStyle(color: Colors.white24))),
+      );
+    }
+
     return Scaffold(
       backgroundColor: obsidianBg,
       body: Stack(
@@ -211,10 +229,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         style: TextStyle(color: isChecked ? Colors.white38 : Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                     value: isChecked,
                     onChanged: (bool? value) {
-                      if (value == true) {
-                        _vitalsCollection.doc(_todayId).set({'completedTasks': FieldValue.arrayUnion([doc.id])}, SetOptions(merge: true));
-                      } else {
-                        _vitalsCollection.doc(_todayId).set({'completedTasks': FieldValue.arrayRemove([doc.id])}, SetOptions(merge: true));
+                      if (currentUid != null) {
+                        if (value == true) {
+                          _vitalsCollection.doc(_todayId).set({'completedTasks': FieldValue.arrayUnion([doc.id])}, SetOptions(merge: true));
+                        } else {
+                          _vitalsCollection.doc(_todayId).set({'completedTasks': FieldValue.arrayRemove([doc.id])}, SetOptions(merge: true));
+                        }
                       }
                     },
                   ),
@@ -252,7 +272,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: primaryAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             onPressed: () {
-              if (textController.text.isNotEmpty) {
+              if (currentUid != null && textController.text.isNotEmpty) {
                 _checklistCollection.add({'task': textController.text.trim(), 'order': 99});
                 Navigator.pop(context);
               }

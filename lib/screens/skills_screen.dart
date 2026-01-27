@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SkillsScreen extends StatefulWidget {
   const SkillsScreen({super.key});
@@ -9,14 +10,26 @@ class SkillsScreen extends StatefulWidget {
 }
 
 class _SkillsScreenState extends State<SkillsScreen> {
-  final _skillsCollection = FirebaseFirestore.instance.collection('skills');
-
   final Color primaryAccent = Colors.amberAccent;
   final Color obsidianBg = const Color(0xFF08080A);
   final Color glassBg = const Color(0xFF121214);
 
+  String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
+
+  CollectionReference get _skillsCollection => FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('skills');
+
   @override
   Widget build(BuildContext context) {
+    if (currentUid == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF08080A),
+        body: Center(child: Text("ACCESS DENIED: PLEASE LOGIN", style: TextStyle(color: Colors.white24))),
+      );
+    }
+
     return Scaffold(
       backgroundColor: obsidianBg,
       body: Stack(
@@ -162,7 +175,9 @@ class _SkillsScreenState extends State<SkillsScreen> {
   }
 
   void _updateLevel(String id, double newLevel) {
-    _skillsCollection.doc(id).update({'level': newLevel.clamp(0.0, 100.0)});
+    if (currentUid != null) {
+      _skillsCollection.doc(id).update({'level': newLevel.clamp(0.0, 100.0)});
+    }
   }
 
   void _showDeleteConfirmation(String id, String name) {
@@ -182,7 +197,9 @@ class _SkillsScreenState extends State<SkillsScreen> {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL", style: TextStyle(color: Colors.white24))),
           TextButton(
             onPressed: () {
-              _skillsCollection.doc(id).delete();
+              if (currentUid != null) {
+                _skillsCollection.doc(id).delete();
+              }
               Navigator.pop(context);
             },
             child: const Text("TERMINATE", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w900)),
@@ -217,7 +234,7 @@ class _SkillsScreenState extends State<SkillsScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: primaryAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             onPressed: () {
-              if (textController.text.isNotEmpty) {
+              if (currentUid != null && textController.text.isNotEmpty) {
                 _skillsCollection.add({'name': textController.text.trim(), 'level': 0.0});
                 Navigator.pop(context);
               }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:koru/screens/calorie_tracker_screen.dart';
 import 'package:koru/screens/meals_library_screen.dart';
 import 'package:koru/screens/water_intake_screen.dart';
@@ -10,6 +11,8 @@ class DietScreen extends StatelessWidget {
 
   final Color accentColor = const Color(0xFFFF9F0A);
 
+  String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
+
   Future<void> logToDailyIntake({
     required String name,
     required int calories,
@@ -17,7 +20,12 @@ class DietScreen extends StatelessWidget {
     required int carbs,
     required int fats,
   }) async {
-    await FirebaseFirestore.instance.collection('dailyLog').add({
+    if (currentUid == null) return;
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUid)
+        .collection('dailyLog')
+        .add({
       'name': name,
       'calories': calories,
       'protein': protein,
@@ -29,6 +37,13 @@ class DietScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (currentUid == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF08080A),
+        body: Center(child: Text("ACCESS DENIED: PLEASE LOGIN", style: TextStyle(color: Colors.white24))),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF08080A),
       body: Stack(
@@ -256,6 +271,7 @@ class DietScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () async {
+              if (currentUid == null) return;
               final String mealName = nameController.text.trim();
               final int kcal = int.tryParse(kcalController.text) ?? 0;
               final int pro = int.tryParse(proController.text) ?? 0;
@@ -271,7 +287,11 @@ class DietScreen extends StatelessWidget {
                 'tags': ['Snack'],
               };
 
-              await FirebaseFirestore.instance.collection('meals').add(mealData);
+              await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(currentUid)
+                  .collection('meals')
+                  .add(mealData);
 
               await logToDailyIntake(
                 name: mealData['name'] as String,

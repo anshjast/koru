@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -10,10 +11,16 @@ class TasksScreen extends StatefulWidget {
 
 class _TasksScreenState extends State<TasksScreen> {
   final TextEditingController _taskController = TextEditingController();
-  final CollectionReference _tasksCollection = FirebaseFirestore.instance.collection('tasks');
+
+  String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
+
+  CollectionReference get _tasksCollection => FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('tasks');
 
   void _addTask() {
-    if (_taskController.text.isNotEmpty) {
+    if (currentUid != null && _taskController.text.isNotEmpty) {
       _tasksCollection.add({
         'name': _taskController.text,
         'createdAt': Timestamp.now(),
@@ -25,10 +32,17 @@ class _TasksScreenState extends State<TasksScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (currentUid == null) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: Text("ACCESS DENIED: PLEASE LOGIN", style: TextStyle(color: Colors.white24))),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Manage Habits'),
+        title: const Text('Manage Habits', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.black,
         elevation: 0,
       ),
@@ -39,7 +53,7 @@ class _TasksScreenState extends State<TasksScreen> {
               stream: _tasksCollection.orderBy('createdAt').snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator(color: Colors.green));
                 }
 
                 final tasks = snapshot.data!.docs;

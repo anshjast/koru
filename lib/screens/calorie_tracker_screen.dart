@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
@@ -18,8 +19,21 @@ class _CalorieTrackerScreenState extends State<CalorieTrackerScreen> {
   int carbsGoal = 250;
   int fatsGoal = 70;
 
+  String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
+
+  CollectionReference get _userDailyLog => FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('dailyLog');
+
+  CollectionReference get _userMealLibrary => FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('meals');
+
   Future<void> _logToDailyIntake(Map<String, dynamic> meal) async {
-    await FirebaseFirestore.instance.collection('dailyLog').add({
+    if (currentUid == null) return;
+    await _userDailyLog.add({
       'name': meal['name'],
       'calories': (meal['calories'] as num? ?? 0).toInt(),
       'protein': (meal['protein'] as num? ?? 0).toInt(),
@@ -35,9 +49,9 @@ class _CalorieTrackerScreenState extends State<CalorieTrackerScreen> {
       backgroundColor: const Color(0xFF0D0D0F),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
       builder: (context) => StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('meals').orderBy('name').snapshots(),
+        stream: _userMealLibrary.orderBy('name').snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFFFF9F0A)));
           return ListView.builder(
             padding: const EdgeInsets.all(24),
             itemCount: snapshot.data!.docs.length,
@@ -62,6 +76,13 @@ class _CalorieTrackerScreenState extends State<CalorieTrackerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (currentUid == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF08080A),
+        body: Center(child: Text("ACCESS DENIED: PLEASE LOGIN", style: TextStyle(color: Colors.white24))),
+      );
+    }
+
     final now = DateTime.now();
     final startOfToday = DateTime(now.year, now.month, now.day);
 
@@ -88,8 +109,7 @@ class _CalorieTrackerScreenState extends State<CalorieTrackerScreen> {
           ),
           SafeArea(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('dailyLog')
+              stream: _userDailyLog
                   .where('timestamp', isGreaterThanOrEqualTo: startOfToday)
                   .orderBy('timestamp', descending: true)
                   .snapshots(),
@@ -174,7 +194,7 @@ class _CalorieTrackerScreenState extends State<CalorieTrackerScreen> {
             child: const Icon(Icons.delete_outline, color: Colors.redAccent),
           ),
           onDismissed: (direction) {
-            FirebaseFirestore.instance.collection('dailyLog').doc(doc.id).delete();
+            _userDailyLog.doc(doc.id).delete();
           },
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),

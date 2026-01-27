@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:confetti/confetti.dart';
 
@@ -11,15 +12,28 @@ class GoalsScreen extends StatefulWidget {
 }
 
 class _GoalsScreenState extends State<GoalsScreen> {
-  final _ootyCollection = FirebaseFirestore.instance.collection('ooty');
-  final _dailyObjectives = FirebaseFirestore.instance.collection('dailyObjectives');
-  final _weeklyObjectives = FirebaseFirestore.instance.collection('weeklyObjectives');
-
   final Color primaryAccent = Colors.purpleAccent;
   final Color obsidianBg = const Color(0xFF08080A);
   final Color glassBg = const Color(0xFF121214);
 
   late ConfettiController _confettiController;
+
+  String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
+
+  CollectionReference get _ootyCollection => FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('ooty');
+
+  CollectionReference get _dailyObjectives => FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('dailyObjectives');
+
+  CollectionReference get _weeklyObjectives => FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('weeklyObjectives');
 
   @override
   void initState() {
@@ -70,6 +84,13 @@ class _GoalsScreenState extends State<GoalsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (currentUid == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF08080A),
+        body: Center(child: Text("ACCESS DENIED: PLEASE LOGIN", style: TextStyle(color: Colors.white24))),
+      );
+    }
+
     return Scaffold(
       backgroundColor: obsidianBg,
       body: Stack(
@@ -328,7 +349,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
             filled: true,
             fillColor: Colors.white.withOpacity(0.03),
             enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: const BorderSide(color: Colors.white10)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide(color: primaryAccent.withOpacity(0.5))),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none),
           ),
         ),
         actions: [
@@ -337,7 +358,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: primaryAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             onPressed: () {
               final String text = textController.text.trim();
-              if (text.isNotEmpty) {
+              if (currentUid != null && text.isNotEmpty) {
                 if (isOoty) {
                   collection.doc('main').set({'text': text, 'isDone': false, 'timestamp': Timestamp.now()}, SetOptions(merge: true));
                 } else if (docId == null) {

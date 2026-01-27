@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:koru/widgets/meal_dialog.dart';
 
 class MealsLibraryScreen extends StatefulWidget {
@@ -10,10 +11,16 @@ class MealsLibraryScreen extends StatefulWidget {
 }
 
 class _MealsLibraryScreenState extends State<MealsLibraryScreen> {
-  final _mealsCollection = FirebaseFirestore.instance.collection('meals');
   final _searchController = TextEditingController();
   String _searchQuery = "";
   final Color accentColor = const Color(0xFFFF9F0A);
+
+  String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
+
+  CollectionReference get _mealsCollection => FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('meals');
 
   @override
   void initState() {
@@ -34,7 +41,12 @@ class _MealsLibraryScreenState extends State<MealsLibraryScreen> {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL", style: TextStyle(color: Colors.white38))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            onPressed: () { doc.reference.delete(); Navigator.pop(context); },
+            onPressed: () {
+              if (currentUid != null) {
+                doc.reference.delete();
+              }
+              Navigator.pop(context);
+            },
             child: const Text("DELETE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
           ),
         ],
@@ -44,6 +56,13 @@ class _MealsLibraryScreenState extends State<MealsLibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (currentUid == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF08080A),
+        body: Center(child: Text("ACCESS DENIED: PLEASE LOGIN", style: TextStyle(color: Colors.white24))),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF08080A),
       body: Stack(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import '../models/auth_service.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -15,8 +17,17 @@ class _AccountScreenState extends State<AccountScreen> {
   final Color glassBg = const Color(0xFF121214);
   final String _todayId = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
+  String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
+
   @override
   Widget build(BuildContext context) {
+    if (currentUid == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF08080A),
+        body: Center(child: Text("ACCESS DENIED: PLEASE LOGIN", style: TextStyle(color: Colors.white24))),
+      );
+    }
+
     return Scaffold(
       backgroundColor: obsidianBg,
       body: Stack(
@@ -52,6 +63,8 @@ class _AccountScreenState extends State<AccountScreen> {
                           style: TextStyle(color: Colors.white24, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 2)),
                       const SizedBox(height: 16),
                       _buildSyncCard(),
+                      const SizedBox(height: 40),
+                      _buildLogoutButton(),
                       const SizedBox(height: 40),
                     ],
                   ),
@@ -91,7 +104,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _buildEditableProfile() {
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('userProfile').doc('main_user').snapshots(),
+      stream: FirebaseFirestore.instance.collection('users').doc(currentUid).snapshots(),
       builder: (context, snapshot) {
         String name = "USER_UNKNOWN";
         String status = "B.TECH FINAL YEAR";
@@ -139,10 +152,15 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _buildEditableVitals() {
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('dailyVitals').doc(_todayId).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUid)
+          .collection('dailyVitals')
+          .doc(_todayId)
+          .snapshots(),
       builder: (context, snapshot) {
         String weight = "60";
-        String height = "5'6\"";
+        String height = "168";
 
         if (snapshot.hasData && snapshot.data!.exists) {
           var data = snapshot.data!.data() as Map<String, dynamic>;
@@ -154,7 +172,7 @@ class _AccountScreenState extends State<AccountScreen> {
           children: [
             Expanded(child: _buildMetricBox("MASS", "$weight KG", () => _showEditVitalsDialog("weight", weight))),
             const SizedBox(width: 16),
-            Expanded(child: _buildMetricBox("HEIGHT", height, () => _showEditVitalsDialog("height", height))),
+            Expanded(child: _buildMetricBox("HEIGHT", "$height CM", () => _showEditVitalsDialog("height", height))),
           ],
         );
       },
@@ -194,17 +212,39 @@ class _AccountScreenState extends State<AccountScreen> {
         children: [
           const Icon(Icons.cloud_done_rounded, color: Colors.blueAccent, size: 20),
           const SizedBox(width: 16),
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("FIRESTORE CLOUD", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-              Text("Synchronized with RMX3511", style: TextStyle(color: Colors.white24, fontSize: 11)),
+              const Text("FIRESTORE CLOUD", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+              Text(FirebaseAuth.instance.currentUser?.email ?? "Guest Mode",
+                  style: const TextStyle(color: Colors.white24, fontSize: 11)),
             ],
           ),
           const Spacer(),
           Text(DateFormat('HH:mm').format(DateTime.now()),
               style: TextStyle(color: primaryAccent.withOpacity(0.3), fontSize: 10, fontWeight: FontWeight.bold)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return GestureDetector(
+      onTap: () async {
+        await AuthService().logout();
+        if (mounted) Navigator.pop(context);
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+        ),
+        child: const Center(
+          child: Text("TERMINATE SESSION",
+              style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 2)),
+        ),
       ),
     );
   }
@@ -220,10 +260,12 @@ class _AccountScreenState extends State<AccountScreen> {
         _buildTextField(statusCtrl, "SYSTEM STATUS"),
       ],
       onSave: () {
-        FirebaseFirestore.instance.collection('userProfile').doc('main_user').set({
-          'name': nameCtrl.text.trim(),
-          'status': statusCtrl.text.trim(),
-        }, SetOptions(merge: true));
+        if (currentUid != null) {
+          FirebaseFirestore.instance.collection('users').doc(currentUid).set({
+            'name': nameCtrl.text.trim(),
+            'status': statusCtrl.text.trim(),
+          }, SetOptions(merge: true));
+        }
       },
     );
   }
@@ -234,10 +276,17 @@ class _AccountScreenState extends State<AccountScreen> {
       title: "UPDATE ${field.toUpperCase()}",
       fields: [_buildTextField(ctrl, "NEW VALUE")],
       onSave: () {
-        FirebaseFirestore.instance.collection('dailyVitals').doc(_todayId).set({
-          field: ctrl.text.trim(),
-          'timestamp': Timestamp.now(),
-        }, SetOptions(merge: true));
+        if (currentUid != null) {
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUid)
+              .collection('dailyVitals')
+              .doc(_todayId)
+              .set({
+            field: ctrl.text.trim(),
+            'timestamp': Timestamp.now(),
+          }, SetOptions(merge: true));
+        }
       },
     );
   }

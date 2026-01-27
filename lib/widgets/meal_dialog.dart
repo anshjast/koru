@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void showMealDialog({
   required BuildContext context,
   DocumentSnapshot? doc,
 }) {
-  final _mealsCollection = FirebaseFirestore.instance.collection('meals');
+  final String? uid = FirebaseAuth.instance.currentUser?.uid;
+
+  final _mealsCollection = FirebaseFirestore.instance
+      .collection('users')
+      .doc(uid)
+      .collection('meals');
+
   final bool isEditing = doc != null;
   var mealData = isEditing ? doc.data() as Map<String, dynamic> : {};
   final accentColor = const Color(0xFFFF9F0A);
@@ -51,7 +58,6 @@ void showMealDialog({
                         style: TextStyle(color: Colors.white38, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5)),
                     const SizedBox(height: 12),
 
-                    // Vertical stack for clear visibility
                     _buildCyberField("Protein (g)", Icons.fitness_center, proController, Colors.blueAccent, isNumber: true),
                     const SizedBox(height: 12),
                     _buildCyberField("Carbs (g)", Icons.grain, carbController, Colors.greenAccent, isNumber: true),
@@ -102,6 +108,8 @@ void showMealDialog({
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 onPressed: () {
+                  if (uid == null) return;
+
                   final meal = {
                     'name': nameController.text.trim(),
                     'calories': int.tryParse(caloriesController.text) ?? 0,
@@ -110,6 +118,7 @@ void showMealDialog({
                     'fats': int.tryParse(fatController.text) ?? 0,
                     'tags': selectedTags,
                   };
+
                   if (isEditing) {
                     _mealsCollection.doc(doc.id).update(meal);
                   } else {
