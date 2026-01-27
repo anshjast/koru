@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
 enum TimeFrame { week, month, year }
+enum MetricType { weight, consistency, skills }
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -14,6 +15,7 @@ class StatsScreen extends StatefulWidget {
 
 class _StatsScreenState extends State<StatsScreen> {
   TimeFrame _selectedTimeFrame = TimeFrame.week;
+  MetricType _selectedMetric = MetricType.weight;
   final Color analyticsColor = const Color(0xFFBB86FC);
   final Color obsidianBg = const Color(0xFF08080A);
   final Color glassBg = const Color(0xFF121214);
@@ -64,17 +66,44 @@ class _StatsScreenState extends State<StatsScreen> {
       padding: const EdgeInsets.all(24),
       child: Row(
         children: [
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("SYSTEM ANALYTICS", style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w900)),
-              Text("BODY METRICS", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+              const Text("SYSTEM ANALYTICS", style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w900)),
+              PopupMenuButton<MetricType>(
+                onSelected: (MetricType value) => setState(() => _selectedMetric = value),
+                offset: const Offset(0, 40),
+                color: glassBg,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                child: Row(
+                  children: [
+                    Text(
+                      _selectedMetric == MetricType.weight ? "BODY METRICS" :
+                      _selectedMetric == MetricType.consistency ? "CONSISTENCY" : "SKILL PROGRESS",
+                      style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 1.5),
+                    ),
+                    const Icon(Icons.arrow_drop_down, color: Colors.white38),
+                  ],
+                ),
+                itemBuilder: (context) => [
+                  _buildPopupItem(MetricType.weight, "BODY METRICS"),
+                  _buildPopupItem(MetricType.consistency, "CONSISTENCY"),
+                  _buildPopupItem(MetricType.skills, "SKILLS"),
+                ],
+              ),
             ],
           ),
           const Spacer(),
           Icon(Icons.analytics_rounded, color: analyticsColor, size: 28),
         ],
       ),
+    );
+  }
+
+  PopupMenuItem<MetricType> _buildPopupItem(MetricType value, String text) {
+    return PopupMenuItem(
+      value: value,
+      child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -117,9 +146,12 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   Widget _buildMainDataStream() {
+    String collection = _selectedMetric == MetricType.weight ? 'dailyVitals' :
+    _selectedMetric == MetricType.consistency ? 'dailyTasks' : 'skillLogs';
+
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('dailyVitals')
+          .collection(collection)
           .orderBy('timestamp', descending: false)
           .snapshots(),
       builder: (context, snapshot) {
@@ -127,7 +159,7 @@ class _StatsScreenState extends State<StatsScreen> {
           return const Center(child: CircularProgressIndicator(color: Color(0xFFBB86FC)));
         }
 
-        final processedData = _processWeightTrend(snapshot.data?.docs ?? [], _selectedTimeFrame);
+        final processedData = _processMetricTrend(snapshot.data?.docs ?? [], _selectedTimeFrame);
         final chartData = processedData['chartData'] as List<FlSpot>;
         final stats = processedData['stats'] as Map<String, dynamic>;
 
@@ -154,6 +186,19 @@ class _StatsScreenState extends State<StatsScreen> {
         aspectRatio: 1.7,
         child: LineChart(
           LineChartData(
+            lineTouchData: LineTouchData(
+              touchTooltipData: LineTouchTooltipData(
+                  tooltipBgColor: glassBg,
+                getTooltipItems: (touchedSpots) {
+                  return touchedSpots.map((spot) {
+                    return LineTooltipItem(
+                      '${spot.y.toStringAsFixed(1)}${_selectedMetric == MetricType.weight ? ' KG' : '%'}',
+                      const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    );
+                  }).toList();
+                },
+              ),
+            ),
             gridData: FlGridData(
               show: true,
               drawVerticalLine: false,
@@ -169,18 +214,30 @@ class _StatsScreenState extends State<StatsScreen> {
                   showTitles: true,
                   reservedSize: 30,
                   getTitlesWidget: (value, meta) {
-                    if (_selectedTimeFrame != TimeFrame.week) return const SizedBox.shrink();
-                    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
                     int index = value.toInt();
-                    return index >= 0 && index < 7
-                        ? SideTitleWidget(
-                      axisSide: meta.axisSide,
-                      child: Text(days[index], style: const TextStyle(color: Colors.white24, fontSize: 10, fontWeight: FontWeight.bold)),
-                    )
-                        : const SizedBox.shrink();
+                    if (_selectedTimeFrame == TimeFrame.week) {
+                      const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+                      return index >= 0 && index < 7 ? SideTitleWidget(axisSide: meta.axisSide, child: Text(days[index], style: const TextStyle(color: Colors.white24, fontSize: 10, fontWeight: FontWeight.bold))) : const SizedBox.shrink();
+                    } else if (_selectedTimeFrame == TimeFrame.month) {
+                      return index % 7 == 0 ? SideTitleWidget(axisSide: meta.axisSide, child: Text('${index + 1}', style: const TextStyle(color: Colors.white24, fontSize: 10))) : const SizedBox.shrink();
+                    } else {
+                      const months = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+                      int monthIndex = (index / 30).floor();
+                      return index % 60 == 0 && monthIndex < 12 ? SideTitleWidget(axisSide: meta.axisSide, child: Text(months[monthIndex], style: const TextStyle(color: Colors.white24, fontSize: 10))) : const SizedBox.shrink();
+                    }
                   },
                 ),
               ),
+            ),
+            extraLinesData: ExtraLinesData(
+              horizontalLines: [
+                HorizontalLine(
+                  y: _selectedMetric == MetricType.weight ? 75.0 : 90.0,
+                  color: Colors.white.withOpacity(0.05),
+                  strokeWidth: 1,
+                  dashArray: [5, 5],
+                ),
+              ],
             ),
             borderData: FlBorderData(show: false),
             lineBarsData: [
@@ -208,17 +265,18 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   Widget _buildStatsGrid(Map<String, dynamic> stats) {
+    String unit = _selectedMetric == MetricType.weight ? 'KG' : '%';
     return Column(
       children: [
         Row(
           children: [
-            Expanded(child: _buildStatCard('AVG WEIGHT', '${stats['average'].toStringAsFixed(1)} KG')),
+            Expanded(child: _buildStatCard('AVG VALUE', '${stats['average'].toStringAsFixed(1)} $unit')),
             const SizedBox(width: 16),
-            Expanded(child: _buildStatCard('MAX WEIGHT', '${stats['peak'].toStringAsFixed(1)} KG')),
+            Expanded(child: _buildStatCard('PEAK VALUE', '${stats['peak'].toStringAsFixed(1)} $unit')),
           ],
         ),
         const SizedBox(height: 16),
-        _buildStatCard('LATEST LOG', '${stats['latest'].toStringAsFixed(1)} KG', fullWidth: true),
+        _buildStatCard('LATEST LOG', '${stats['latest'].toStringAsFixed(1)} $unit', fullWidth: true),
       ],
     );
   }
@@ -243,32 +301,50 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Map<String, dynamic> _processWeightTrend(List<QueryDocumentSnapshot> docs, TimeFrame frame) {
-    Map<DateTime, double> dailyWeights = {};
+  Map<String, dynamic> _processMetricTrend(List<QueryDocumentSnapshot> docs, TimeFrame frame) {
+    Map<DateTime, double> dataMap = {};
+    String key = _selectedMetric == MetricType.weight ? 'weight' :
+    _selectedMetric == MetricType.consistency ? 'completion' : 'minutes';
+
     for (var doc in docs) {
       var data = doc.data() as Map<String, dynamic>;
-      if (data.containsKey('weight') && data['timestamp'] != null) {
+      if (data.containsKey(key) && data['timestamp'] != null) {
         DateTime date = (data['timestamp'] as Timestamp).toDate();
         DateTime dayOnly = DateTime(date.year, date.month, date.day);
-        dailyWeights[dayOnly] = double.tryParse(data['weight'].toString()) ?? 0.0;
+        dataMap[dayOnly] = double.tryParse(data[key].toString()) ?? 0.0;
       }
     }
 
     DateTime now = DateTime.now();
-    int daysToLookBack = (frame == TimeFrame.week) ? 7 : (frame == TimeFrame.month ? 30 : 365);
-    DateTime startDate = DateTime(now.year, now.month, now.day).subtract(Duration(days: daysToLookBack - 1));
+    int days = (frame == TimeFrame.week) ? 7 : (frame == TimeFrame.month ? 30 : 365);
+    DateTime start = DateTime(now.year, now.month, now.day).subtract(Duration(days: days - 1));
 
     List<FlSpot> spots = [];
     List<double> values = [];
-    double lastKnownWeight = 60.0;
 
-    for (int i = 0; i < daysToLookBack; i++) {
-      DateTime currentDate = startDate.add(Duration(days: i));
-      if (dailyWeights.containsKey(currentDate)) {
-        lastKnownWeight = dailyWeights[currentDate]!;
+    List<DateTime> sortedDates = dataMap.keys.toList()..sort();
+
+    for (int i = 0; i < days; i++) {
+      DateTime current = start.add(Duration(days: i));
+      double val;
+
+      if (dataMap.containsKey(current)) {
+        val = dataMap[current]!;
+      } else {
+        DateTime? prevDate = sortedDates.reversed.firstWhere((d) => d.isBefore(current), orElse: () => DateTime(2000));
+        DateTime? nextDate = sortedDates.firstWhere((d) => d.isAfter(current), orElse: () => DateTime(2100));
+
+        if (dataMap.containsKey(prevDate) && dataMap.containsKey(nextDate)) {
+          int totalGap = nextDate.difference(prevDate).inDays;
+          int currentGap = current.difference(prevDate).inDays;
+          double diff = dataMap[nextDate]! - dataMap[prevDate]!;
+          val = dataMap[prevDate]! + (diff * (currentGap / totalGap));
+        } else {
+          val = dataMap[prevDate] ?? 0.0;
+        }
       }
-      spots.add(FlSpot(i.toDouble(), lastKnownWeight));
-      values.add(lastKnownWeight);
+      spots.add(FlSpot(i.toDouble(), val));
+      values.add(val);
     }
 
     double avg = values.isEmpty ? 0 : values.reduce((a, b) => a + b) / values.length;
@@ -276,11 +352,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
     return {
       'chartData': spots,
-      'stats': {
-        'average': avg,
-        'peak': max,
-        'latest': values.isNotEmpty ? values.last : 0.0,
-      }
+      'stats': {'average': avg, 'peak': max, 'latest': values.isNotEmpty ? values.last : 0.0}
     };
   }
 }
