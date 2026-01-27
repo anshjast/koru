@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:koru/screens/water_history_screen.dart';
 import 'package:liquid_progress_indicator_v2/liquid_progress_indicator.dart';
@@ -12,12 +13,19 @@ class WaterIntakeScreen extends StatefulWidget {
 }
 
 class _WaterIntakeScreenState extends State<WaterIntakeScreen> {
-  final _waterLogCollection = FirebaseFirestore.instance.collection('waterLog');
+  String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
+
+  CollectionReference get _waterLogCollection => FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('waterLog');
+
   final int _dailyTarget = 2000;
   final int _drinkAmount = 250;
   final Color waterColor = const Color(0xFF00D2FF);
 
   void _addWaterEntry() {
+    if (currentUid == null) return;
     _waterLogCollection.add({
       'amount': _drinkAmount,
       'timestamp': Timestamp.now(),
@@ -26,6 +34,13 @@ class _WaterIntakeScreenState extends State<WaterIntakeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (currentUid == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF08080A),
+        body: Center(child: Text("Please login to track hydration", style: TextStyle(color: Colors.white))),
+      );
+    }
+
     final now = DateTime.now();
     final startOfToday = DateTime(now.year, now.month, now.day);
     final endOfToday = startOfToday.add(const Duration(days: 1));

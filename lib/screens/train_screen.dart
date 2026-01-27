@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 class TrainScreen extends StatefulWidget {
@@ -20,10 +21,17 @@ class _TrainScreenState extends State<TrainScreen> {
   final Color obsidianBg = const Color(0xFF08080A);
   final Color glassBg = const Color(0xFF121214);
 
+  String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
+
+  CollectionReference get _userVitalsCollection => FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('dailyVitals');
+
   void _saveEnergyLevel() {
-    if (_energyLevel != null) {
+    if (currentUid != null && _energyLevel != null) {
       final String todayId = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      FirebaseFirestore.instance.collection('dailyVitals').doc(todayId).set({
+      _userVitalsCollection.doc(todayId).set({
         'energyLevel': _energyLevel,
         'timestamp': Timestamp.now(),
       }, SetOptions(merge: true));
@@ -32,9 +40,9 @@ class _TrainScreenState extends State<TrainScreen> {
   }
 
   void _saveTrainedMuscles() {
-    if (_selectedMuscleGroups.isNotEmpty) {
+    if (currentUid != null && _selectedMuscleGroups.isNotEmpty) {
       final String todayId = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      FirebaseFirestore.instance.collection('dailyVitals').doc(todayId).set({
+      _userVitalsCollection.doc(todayId).set({
         'trainedMuscles': _selectedMuscleGroups,
         'lastTrainedTimestamp': Timestamp.now(),
       }, SetOptions(merge: true));
@@ -54,6 +62,13 @@ class _TrainScreenState extends State<TrainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (currentUid == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF08080A),
+        body: Center(child: Text("ACCESS DENIED: PLEASE LOGIN")),
+      );
+    }
+
     return Scaffold(
       backgroundColor: obsidianBg,
       body: Stack(
@@ -203,7 +218,7 @@ class _TrainScreenState extends State<TrainScreen> {
     final String todayId = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('dailyVitals').doc(todayId).snapshots(),
+      stream: _userVitalsCollection.doc(todayId).snapshots(),
       builder: (context, snapshot) {
         String currentWeight = "60";
 
@@ -327,11 +342,13 @@ class _TrainScreenState extends State<TrainScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: trainColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             onPressed: () async {
-              final String todayId = DateFormat('yyyy-MM-dd').format(DateTime.now());
-              await FirebaseFirestore.instance.collection('dailyVitals').doc(todayId).set({
-                'weight': weightController.text.trim(),
-                'timestamp': Timestamp.now(),
-              }, SetOptions(merge: true));
+              if (currentUid != null) {
+                final String todayId = DateFormat('yyyy-MM-dd').format(DateTime.now());
+                await _userVitalsCollection.doc(todayId).set({
+                  'weight': weightController.text.trim(),
+                  'timestamp': Timestamp.now(),
+                }, SetOptions(merge: true));
+              }
               Navigator.pop(context);
             },
             child: const Text("SAVE", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),

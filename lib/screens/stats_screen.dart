@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
@@ -16,12 +17,46 @@ class StatsScreen extends StatefulWidget {
 class _StatsScreenState extends State<StatsScreen> {
   TimeFrame _selectedTimeFrame = TimeFrame.week;
   MetricType _selectedMetric = MetricType.weight;
+
   final Color analyticsColor = const Color(0xFFBB86FC);
+  final Color targetGold = const Color(0xFFFFD700);
   final Color obsidianBg = const Color(0xFF08080A);
   final Color glassBg = const Color(0xFF121214);
 
+  double targetWeight = 65.0;
+  double userHeightCm = 168.0;
+
+  String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserBiometrics();
+  }
+
+  Future<void> _loadUserBiometrics() async {
+    if (currentUid == null) return;
+    final doc = await FirebaseFirestore.instance.collection('users').doc(currentUid).get();
+    if (doc.exists && doc.data() != null) {
+      setState(() {
+        targetWeight = doc.data()!['targetWeight']?.toDouble() ?? 79.0;
+        userHeightCm = doc.data()!['height']?.toDouble() ?? 168.0;
+      });
+    }
+  }
+
+  Future<void> _saveUserBiometrics(double weight, double height) async {
+    if (currentUid == null) return;
+    await FirebaseFirestore.instance.collection('users').doc(currentUid).set({
+      'targetWeight': weight,
+      'height': height,
+    }, SetOptions(merge: true));
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (currentUid == null) return const Scaffold(backgroundColor: Color(0xFF08080A), body: Center(child: Text("ACCESS DENIED: PLEASE LOGIN")));
+
     return Scaffold(
       backgroundColor: obsidianBg,
       body: Stack(
@@ -49,6 +84,8 @@ class _StatsScreenState extends State<StatsScreen> {
                       _buildTimeFrameSelector(),
                       const SizedBox(height: 24),
                       _buildMainDataStream(),
+                      const SizedBox(height: 24),
+                      _buildSettingsButton(),
                       const SizedBox(height: 100),
                     ],
                   ),
@@ -159,6 +196,8 @@ class _StatsScreenState extends State<StatsScreen> {
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUid)
           .collection(collection)
           .orderBy('timestamp', descending: false)
           .snapshots(),
@@ -188,11 +227,12 @@ class _StatsScreenState extends State<StatsScreen> {
     double maxY = 100;
 
     if (spots.isNotEmpty) {
-      double minWeight = spots.map((s) => s.y).reduce((a, b) => a < b ? a : b);
-      double maxWeight = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
-
-      minY = (minWeight - 5).clamp(0, double.infinity);
-      maxY = maxWeight + 5;
+      double minW = spots.map((s) => s.y).reduce((a, b) => a < b ? a : b);
+      double maxW = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
+      minY = (minW - 5).clamp(0, double.infinity);
+      maxY = (maxW + 5);
+      if (targetWeight > maxY) maxY = targetWeight + 5;
+      if (targetWeight < minY) minY = (targetWeight - 5).clamp(0, double.infinity);
     }
 
     return Container(
@@ -212,26 +252,35 @@ class _StatsScreenState extends State<StatsScreen> {
               touchTooltipData: LineTouchTooltipData(
                 tooltipBgColor: const Color(0xFF1A1A1C),
                 tooltipRoundedRadius: 8,
-                getTooltipItems: (touchedSpots) {
-                  return touchedSpots.map((spot) {
-                    return LineTooltipItem(
-                      '${spot.y.toStringAsFixed(1)} ${_getUnit()}',
-                      const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
-                    );
-                  }).toList();
-                },
               ),
             ),
             gridData: FlGridData(
               show: true,
               drawHorizontalLine: true,
-              horizontalInterval: 5,
+              horizontalInterval: 10,
               getDrawingHorizontalLine: (value) => FlLine(
                 color: Colors.white.withOpacity(0.03),
                 strokeWidth: 1,
                 dashArray: [5, 5],
               ),
               drawVerticalLine: false,
+            ),
+            extraLinesData: ExtraLinesData(
+              horizontalLines: [
+                if (_selectedMetric == MetricType.weight)
+                  HorizontalLine(
+                    y: targetWeight,
+                    color: targetGold.withOpacity(0.5),
+                    strokeWidth: 1.5,
+                    dashArray: [8, 4],
+                    label: HorizontalLineLabel(
+                      show: true,
+                      alignment: Alignment.topRight,
+                      style: TextStyle(color: targetGold.withOpacity(0.8), fontSize: 9, fontWeight: FontWeight.bold),
+                      labelResolver: (line) => "TARGET: ${targetWeight.toInt()}KG",
+                    ),
+                  ),
+              ],
             ),
             titlesData: FlTitlesData(
               show: true,
@@ -280,14 +329,6 @@ class _StatsScreenState extends State<StatsScreen> {
                     strokeColor: obsidianBg,
                   ),
                 ),
-                belowBarData: BarAreaData(
-                  show: true,
-                  gradient: LinearGradient(
-                    colors: [analyticsColor.withOpacity(0.1), Colors.transparent],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
               ),
             ],
           ),
@@ -297,14 +338,7 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   Widget _buildBMIGauge(double weight) {
-    const double heightInMeters = 1.68;
-    double bmi = weight / (heightInMeters * heightInMeters);
-
-    String status = "NORMAL";
-    Color statusColor = analyticsColor;
-    if (bmi < 18.5) { status = "UNDERWEIGHT"; statusColor = Colors.blue; }
-    else if (bmi >= 25 && bmi < 30) { status = "OVERWEIGHT"; statusColor = Colors.orange; }
-    else if (bmi >= 30) { status = "OBESE"; statusColor = Colors.red; }
+    double bmi = weight / ((userHeightCm / 100) * (userHeightCm / 100));
 
     return Container(
       margin: const EdgeInsets.only(top: 24),
@@ -320,7 +354,7 @@ class _StatsScreenState extends State<StatsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text("BODY MASS INDEX", style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
-              Text(status, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w900)),
+              Text(bmi < 25 ? "NORMAL" : "ALERT", style: TextStyle(color: analyticsColor, fontSize: 10, fontWeight: FontWeight.w900)),
             ],
           ),
           const SizedBox(height: 20),
@@ -336,10 +370,10 @@ class _StatsScreenState extends State<StatsScreen> {
                     sectionsSpace: 4,
                     centerSpaceRadius: 60,
                     sections: [
-                      PieChartSectionData(color: Colors.blue.withOpacity(bmi < 18.5 ? 0.8 : 0.2), value: 25, showTitle: false, radius: 12),
-                      PieChartSectionData(color: analyticsColor.withOpacity(bmi >= 18.5 && bmi < 25 ? 0.8 : 0.2), value: 25, showTitle: false, radius: 12),
-                      PieChartSectionData(color: Colors.orange.withOpacity(bmi >= 25 && bmi < 30 ? 0.8 : 0.2), value: 25, showTitle: false, radius: 12),
-                      PieChartSectionData(color: Colors.red.withOpacity(bmi >= 30 ? 0.8 : 0.2), value: 25, showTitle: false, radius: 12),
+                      PieChartSectionData(color: Colors.blue.withOpacity(0.2), value: 25, showTitle: false, radius: 12),
+                      PieChartSectionData(color: analyticsColor.withOpacity(0.8), value: 25, showTitle: false, radius: 12),
+                      PieChartSectionData(color: Colors.orange.withOpacity(0.2), value: 25, showTitle: false, radius: 12),
+                      PieChartSectionData(color: Colors.red.withOpacity(0.2), value: 25, showTitle: false, radius: 12),
                     ],
                   ),
                 ),
@@ -358,14 +392,6 @@ class _StatsScreenState extends State<StatsScreen> {
         ],
       ),
     );
-  }
-
-  String _getUnit() {
-    switch (_selectedMetric) {
-      case MetricType.weight: return 'KG';
-      case MetricType.calories: return 'KCAL';
-      case MetricType.streak: return 'DAYS';
-    }
   }
 
   Widget _buildStatsGrid(Map<String, dynamic> stats) {
@@ -403,6 +429,86 @@ class _StatsScreenState extends State<StatsScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildSettingsButton() {
+    return GestureDetector(
+      onTap: _showSettingsDialog,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: glassBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: targetGold.withOpacity(0.2)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.tune_rounded, color: targetGold, size: 18),
+            const SizedBox(width: 12),
+            const Text("UPDATE BIOMETRICS", style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.5)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        double tempWeight = targetWeight;
+        double tempHeight = userHeightCm;
+        return AlertDialog(
+          backgroundColor: glassBg,
+          title: const Text("ADJUST BIOMETRICS", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDialogField("TARGET WEIGHT (KG)", targetWeight, (v) => tempWeight = v),
+              const SizedBox(height: 16),
+              _buildDialogField("HEIGHT (CM)", userHeightCm, (v) => tempHeight = v),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL", style: TextStyle(color: Colors.white24))),
+            TextButton(
+              onPressed: () async {
+                setState(() {
+                  targetWeight = tempWeight;
+                  userHeightCm = tempHeight;
+                });
+                await _saveUserBiometrics(tempWeight, tempHeight);
+                Navigator.pop(context);
+              },
+              child: Text("SAVE", style: TextStyle(color: analyticsColor, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDialogField(String label, double initialValue, Function(double) onChanged) {
+    return TextField(
+      keyboardType: TextInputType.number,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white38, fontSize: 10),
+        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+      ),
+      onChanged: (v) => onChanged(double.tryParse(v) ?? initialValue),
+    );
+  }
+
+  String _getUnit() {
+    switch (_selectedMetric) {
+      case MetricType.weight: return 'KG';
+      case MetricType.calories: return 'KCAL';
+      case MetricType.streak: return 'DAYS';
+    }
   }
 
   Map<String, dynamic> _processMetricTrend(List<QueryDocumentSnapshot> docs, TimeFrame frame) {

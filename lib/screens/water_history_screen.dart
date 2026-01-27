@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
@@ -17,8 +18,17 @@ class _WaterHistoryScreenState extends State<WaterHistoryScreen> {
   final int _dailyTarget = 2000;
   final Color waterColor = const Color(0xFF00D2FF);
 
+  String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
+
   @override
   Widget build(BuildContext context) {
+    if (currentUid == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF08080A),
+        body: Center(child: Text("PLEASE LOGIN TO VIEW HISTORY", style: TextStyle(color: Colors.white24))),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF08080A),
       body: Stack(
@@ -129,7 +139,12 @@ class _WaterHistoryScreenState extends State<WaterHistoryScreen> {
 
   Widget _buildMainDataStream() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('waterLog').orderBy('timestamp').snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUid)
+          .collection('waterLog')
+          .orderBy('timestamp')
+          .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
