@@ -20,8 +20,9 @@ class _WaterIntakeScreenState extends State<WaterIntakeScreen> {
       .doc(currentUid)
       .collection('waterLog');
 
-  final int _dailyTarget = 2000;
-  final int _drinkAmount = 250;
+
+  final int _dailyTarget = 2500;
+  final int _drinkAmount = 300;
   final Color waterColor = const Color(0xFF00D2FF);
 
   void _addWaterEntry() {
