@@ -240,7 +240,7 @@ class DietScreen extends StatelessWidget {
                 GestureDetector(
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const MealsLibraryScreen()));
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const CalorieTrackerScreen()));
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -278,23 +278,21 @@ class DietScreen extends StatelessWidget {
               final int carb = int.tryParse(carbController.text) ?? 0;
               final int fat = int.tryParse(fatController.text) ?? 0;
 
-              final mealData = {
+              await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(currentUid)
+                  .collection('meals')
+                  .add({
                 'name': mealName.isEmpty ? "Quick Meal" : mealName,
                 'calories': kcal,
                 'protein': pro,
                 'carbs': carb,
                 'fats': fat,
                 'tags': ['Snack'],
-              };
-
-              await FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(currentUid)
-                  .collection('meals')
-                  .add(mealData);
+              });
 
               await logToDailyIntake(
-                name: mealData['name'] as String,
+                name: mealName.isEmpty ? "Quick Meal" : mealName,
                 calories: kcal,
                 protein: pro,
                 carbs: carb,
