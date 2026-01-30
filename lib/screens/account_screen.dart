@@ -104,7 +104,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 ),
               ),
               const SizedBox(width: 20),
-              const Text("SYSTEM IDENTITY",
+              const Text("USER PROFILE",
                   style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
             ],
           ),
@@ -148,9 +148,9 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget _buildVitalsRow(String weight, String height) {
     return Row(
       children: [
-        Expanded(child: _buildMetricBox("BODY MASS", "$weight KG", Icons.monitor_weight_outlined)),
+        Expanded(child: _buildMetricBox("CURRENT WEIGHT", "$weight KG", Icons.monitor_weight_outlined)),
         const SizedBox(width: 12),
-        Expanded(child: _buildMetricBox("IDENTITY HEIGHT", "$height CM", Icons.height_rounded)),
+        Expanded(child: _buildMetricBox("HEIGHT", "$height CM", Icons.height_rounded)),
       ],
     );
   }
@@ -281,7 +281,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Text("NO WORKOUT DATA", style: TextStyle(color: Colors.white10, fontSize: 10));
                 }
-                Map<String, int> counts = {"CHEST": 0, "BACK": 0, "LEGS": 0, "SHOULDERS": 0, "ARMS": 0};
+                Map<String, int> counts = {"CHEST": 0, "BACK": 0, "LEGS": 0, "SHOULDERS": 0, "ARMS": 0, "BICEPS" : 0, "TRICEPS": 0};
                 for (var doc in snapshot.data!.docs) {
                   var data = doc.data() as Map<String, dynamic>;
                   String part = (data['muscleGroup'] ?? "").toString().toUpperCase();
