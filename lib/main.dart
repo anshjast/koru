@@ -45,7 +45,7 @@ class KoruApp extends StatelessWidget {
                 if (userSnapshot.hasData && userSnapshot.data!.exists) {
                   var data = userSnapshot.data!.data() as Map<String, dynamic>;
                   if (data['setupComplete'] == true) {
-                    return const DashboardScreen();
+                    return DashboardScreen();
                   }
                 }
 

@@ -26,6 +26,7 @@ class _StatsScreenState extends State<StatsScreen> {
   double userHeightCm = 168.0;
   double currentShoulders = 0.0;
   double currentWaist = 0.0;
+  double currentNeck = 38.0;
 
   String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
 
@@ -49,6 +50,7 @@ class _StatsScreenState extends State<StatsScreen> {
             userHeightCm = (data['height'] as num?)?.toDouble() ?? 168.0;
             currentShoulders = (data['shoulders'] as num?)?.toDouble() ?? 0.0;
             currentWaist = (data['waist'] as num?)?.toDouble() ?? 0.0;
+            currentNeck = (data['neck'] as num?)?.toDouble() ?? 38.0;
           }
 
           return SafeArea(
@@ -268,20 +270,25 @@ class _StatsScreenState extends State<StatsScreen> {
     final weightController = TextEditingController(text: targetWeight.toString());
     final shoulderController = TextEditingController(text: currentShoulders.toString());
     final waistController = TextEditingController(text: currentWaist.toString());
+    final neckController = TextEditingController(text: (currentNeck ?? 38.0).toString());
+    final heightController = TextEditingController(text: userHeightCm.toString());
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: glassBg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        title: const Text("ADJUST HARDWARE", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
+        title: const Text("ADJUST HARDWARE",
+            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildDialogField("TARGET WEIGHT (KG)", weightController),
+              _buildDialogField("HEIGHT (CM)", heightController),
               _buildDialogField("SHOULDERS (CM)", shoulderController),
-              _buildDialogField("WAIST (CM)", waistController),
+              _buildDialogField("WAIST (CM) - for Body Fat", waistController),
+              _buildDialogField("NECK (CM) - for Body Fat", neckController),
             ],
           ),
         ),
@@ -292,8 +299,10 @@ class _StatsScreenState extends State<StatsScreen> {
               if (currentUid != null) {
                 await FirebaseFirestore.instance.collection('users').doc(currentUid).update({
                   'targetWeight': double.tryParse(weightController.text) ?? targetWeight,
+                  'height': double.tryParse(heightController.text) ?? userHeightCm,
                   'shoulders': double.tryParse(shoulderController.text) ?? currentShoulders,
                   'waist': double.tryParse(waistController.text) ?? currentWaist,
+                  'neck': double.tryParse(neckController.text) ?? 38.0,
                 });
               }
               Navigator.pop(context);

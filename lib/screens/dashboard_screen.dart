@@ -12,6 +12,7 @@ import 'package:koru/screens/train_screen.dart';
 import 'package:koru/widgets/glow_plus_button.dart';
 import 'package:koru/screens/stats_screen.dart';
 import 'package:koru/screens/account_screen.dart';
+import 'package:koru/screens/performance_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -29,6 +30,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     {"title": "SKILLS", "icon": Icons.construction, "color": Colors.amberAccent},
     {"title": "AVOID", "icon": Icons.do_not_disturb_on, "color": Colors.redAccent},
   ];
+
+  final Color performanceBlue = const Color(0xFF2E5BFF);
 
   String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
 
@@ -88,7 +91,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _buildHeader(),
                 const SizedBox(height: 20),
                 _buildModernCardList(),
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
+                _buildPerformanceOSCard(),
                 Expanded(child: _buildScrollableContent()),
               ],
             ),
@@ -170,6 +174,64 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildPerformanceOSCard() {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(currentUid).snapshots(),
+      builder: (context, snapshot) {
+        double currentWeight = 60.0;
+        double waist = 0.0;
+        if (snapshot.hasData && snapshot.data!.exists) {
+          var data = snapshot.data!.data() as Map<String, dynamic>;
+          currentWeight = (data['currentWeight'] as num?)?.toDouble() ?? 60.0;
+          waist = (data['waist'] as num?)?.toDouble() ?? 0.0;
+        }
+
+        double leanMass = currentWeight * 0.82;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PerformanceHub())),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(30),
+                gradient: LinearGradient(
+                  colors: [performanceBlue.withOpacity(0.15), Colors.transparent],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(color: performanceBlue.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: performanceBlue.withOpacity(0.1), shape: BoxShape.circle),
+                    child: Icon(Icons.hub_outlined, color: performanceBlue, size: 28),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("PERFORMANCE OS", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                        const SizedBox(height: 4),
+                        Text("LEAN MASS: ${leanMass.toStringAsFixed(1)} KG", style: TextStyle(color: performanceBlue, fontSize: 10, fontWeight: FontWeight.w900)),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 14),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildScrollableContent() {
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     return StreamBuilder<QuerySnapshot>(
@@ -179,7 +241,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final tasks = snapshot.data!.docs;
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
